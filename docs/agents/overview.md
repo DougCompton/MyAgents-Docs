@@ -68,24 +68,24 @@ Specialized roles that define agent capabilities:
 
 The simplest pattern - one persona handles all interactions.
 
-```json
-{
-  "id": "weather-agent",
-  "name": "Weather Agent",
-  "description": "Provides current weather information",
-  "agents": [
-    {
-      "name": "weather_helper",
-      "description": "Retrieves and presents weather data",
-      "instructions": [
-        {
-          "content": "You provide weather information. Use the weather tool to get current conditions and forecasts. Present information clearly and concisely."
-        }
-      ],
-      "toolsets": ["weather-tool"]
-    }
-  ]
-}
+```yaml
+version: "1"
+id: weather-agent
+name: Weather Agent
+description: Provides current weather information
+
+agents:
+  weather_helper:
+    type: llm
+    name: Weather Helper
+    description: Retrieves and presents weather data
+    instructions:
+      - |
+        You provide weather information. Use the weather tool to get 
+        current conditions and forecasts. Present information clearly 
+        and concisely.
+    toolsets:
+      - weather-tool
 ```
 
 **When to use:**
@@ -103,44 +103,58 @@ The simplest pattern - one persona handles all interactions.
 
 Multiple specialized personas work together to handle complex workflows.
 
-```json
-{
-  "id": "support-agent",
-  "name": "Customer Support Agent",
-  "description": "Routes and handles customer support inquiries",
-  "interactive": true,
-  "agents": [
-    {
-      "name": "coordinator",
-      "description": "Routes requests to appropriate specialists",
-      "instructions": [{
-        "content": "Analyze customer requests and delegate to:\n- technical_support for bugs and technical issues\n- billing_support for payment questions\n- account_support for account access\n\nUse transfer_task to delegate work."
-      }],
-      "subAgents": ["technical_support", "billing_support", "account_support"]
-    },
-    {
-      "name": "technical_support",
-      "description": "Handles technical issues",
-      "instructions": [{
-        "content": "Provide technical troubleshooting. Offer step-by-step guidance and link to documentation."
-      }]
-    },
-    {
-      "name": "billing_support",
-      "description": "Handles billing inquiries",
-      "instructions": [{
-        "content": "Address payment and subscription questions. Provide invoice details and handle refund requests."
-      }]
-    },
-    {
-      "name": "account_support",
-      "description": "Handles account management",
-      "instructions": [{
-        "content": "Assist with account settings, password resets, and security concerns."
-      }]
-    }
-  ]
-}
+```yaml
+version: "1"
+id: support-agent
+name: Customer Support Agent
+description: Routes and handles customer support inquiries
+interactive: true
+default_agent: coordinator
+
+agents:
+  coordinator:
+    type: llm
+    name: Support Coordinator
+    description: Routes requests to appropriate specialists
+    instructions:
+      - |
+        Analyze customer requests and delegate to:
+        - technical_support for bugs and technical issues
+        - billing_support for payment questions
+        - account_support for account access
+        
+        Use transfer_task to delegate work.
+    sub_agents:
+      - technical_support
+      - billing_support
+      - account_support
+  
+  technical_support:
+    type: llm
+    name: Technical Support
+    description: Handles technical issues
+    instructions:
+      - |
+        Provide technical troubleshooting. Offer step-by-step 
+        guidance and link to documentation.
+  
+  billing_support:
+    type: llm
+    name: Billing Support
+    description: Handles billing inquiries
+    instructions:
+      - |
+        Address payment and subscription questions. Provide invoice 
+        details and handle refund requests.
+  
+  account_support:
+    type: llm
+    name: Account Support
+    description: Handles account management
+    instructions:
+      - |
+        Assist with account settings, password resets, and 
+        security concerns.
 ```
 
 **When to use:**
@@ -161,17 +175,20 @@ Multiple specialized personas work together to handle complex workflows.
 
 Each persona has distinct capabilities and responsibilities:
 
-```json
-{
-  "name": "persona_identifier",
-  "description": "Brief description of role",
-  "model": "anthropic",
-  "instructions": [
-    {"content": "Detailed behavioral instructions"}
-  ],
-  "subAgents": ["other_persona"],
-  "toolsets": ["tool1", "tool2"]
-}
+```yaml
+persona_identifier:
+  type: llm
+  name: Persona Display Name
+  description: Brief description of role
+  model: anthropic
+  instructions:
+    - |
+      Detailed behavioral instructions
+  sub_agents:
+    - other_persona
+  toolsets:
+    - tool1
+    - tool2
 ```
 
 ### Required Properties
@@ -346,12 +363,11 @@ The **switchboard** is a special system agent that coordinates all agent interac
 
 The switchboard uses agent descriptions to make routing decisions:
 
-```json
-{
-  "id": "blog-team",
-  "name": "Blog Writing Team",
-  "description": "Coordinates research, writing, and editing for blog content creation"
-}
+```yaml
+version: "1"
+id: blog-team
+name: Blog Writing Team
+description: Coordinates research, writing, and editing for blog content creation
 ```
 
 When a user says: "I need help writing a blog post"
@@ -410,17 +426,25 @@ Write clear, concise descriptions that help routing:
 Create specific, actionable instructions:
 
 **Good instructions:**
-```json
-{
-  "content": "You are a product specialist. Responsibilities:\n- Search catalog for products matching customer needs\n- Provide 3-5 recommendations with pricing and features\n- Include alternatives at different price points\n- Highlight products with 4+ star ratings\n\nFormat recommendations as numbered lists with clear rationale."
-}
+```yaml
+product_specialist:
+  instructions:
+    - |
+      You are a product specialist. Responsibilities:
+      - Search catalog for products matching customer needs
+      - Provide 3-5 recommendations with pricing and features
+      - Include alternatives at different price points
+      - Highlight products with 4+ star ratings
+      
+      Format recommendations as numbered lists with clear rationale.
 ```
 
 **Poor instructions:**
-```json
-{
-  "content": "Help with products."
-}
+```yaml
+product_specialist:
+  instructions:
+    - |
+      Help with products.
 ```
 
 ### Tool Selection

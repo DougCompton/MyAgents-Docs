@@ -417,8 +417,8 @@ Defines agent behavior through conditional and default instructions.
 instructions:
   - "condition": |
       Instructions when condition evaluates to true
-  - "": |
-      Default instructions (condition is empty string)
+  - |
+    Default instructions (no condition)
 ```
 
 **Rules:**
