@@ -136,10 +136,10 @@ plugins:
   - search:
       lang: en
       separator: '[\s\-\.]+'
-  - minify:
-      minify_html: true
-      minify_js: true
-      minify_css: true
+#  - minify:
+#      minify_html: true
+#      minify_js: true
+#      minify_css: true
 
 # Navigation structure
 nav:
