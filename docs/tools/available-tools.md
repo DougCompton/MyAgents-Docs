@@ -1,502 +1,800 @@
 # Available Tools
 
-This reference lists all MCP tools available in the MyAgents platform.
+Complete catalog of tools available for agent integration.
 
-## Quick Reference
+## Core Tools
 
-| Tool | Category | Description | Authentication |
-|------|----------|-------------|----------------|
-| [duckduckgo](#duckduckgo) | Search | Web search engine | None |
-| [weather-tool](#weather-tool) | Information | Weather data | None |
-| [memory-server](#memory-server) | Storage | Persistent data storage | None |
-| [notification-server](#notification-server) | Communication | Push notifications | None |
-| [google-calendar](#google-calendar) | Integration | Calendar management | OAuth Required |
-| [switch_agent](#switch_agent) | System | Switch to another agent | Built-in |
-| [transfer_task](#transfer_task) | System | Delegate to sub-persona | Built-in |
+### DuckDuckGo Search
 
-## System Tools
-
-These tools are automatically available and don't need to be specified in `toolsets`.
-
-### switch_agent
-
-**Purpose:** Switch from current agent to another specialized agent
-
-**Category:** System / Built-in
-
-**Availability:** Automatically available to all agents
-
-**When to use:**
-- Current agent cannot handle the user's request
-- User's request is better suited for another specialized agent
-- Need to transition workflow to different domain expert
-
-**Usage in instructions:**
-```json
-{
-  "content": "If the user asks about topics outside your expertise, use the switch_agent tool to transfer them to an appropriate specialist. For example, weather questions → weather agent, shopping assistance → shopping agent."
-}
-```
-
-**Parameters:**
-- `agent_id` (string): ID of target agent
-- `reason` (string): Explanation of why switching
-
-**Notes:**
-- Only available to switchboard and coordinator agents
-- Preserves conversation context
-- User is informed of the switch
-
----
-
-### transfer_task
-
-**Purpose:** Delegate a task to a sub-persona within the same agent
-
-**Category:** System / Built-in
-
-**Availability:** Automatically available to coordinator personas
-
-**When to use:**
-- Multi-step workflows requiring specialization
-- Sequential processing (research → write → edit)
-- Parallel task decomposition
-
-**Usage in instructions:**
-```json
-{
-  "content": "To delegate tasks:\n1. Identify which sub-persona should handle the task\n2. Use transfer_task with clear task description\n3. Wait for sub-persona to complete\n4. Process and present results\n\nAvailable sub-personas: researcher, writer, editor"
-}
-```
-
-**Parameters:**
-- `target_persona` (string): Name of sub-persona
-- `task_description` (string): What the sub-persona should do
-
-**Notes:**
-- Only available to personas with defined `subAgents`
-- Task context is preserved
-- Results return to calling persona
-
----
-
-## Search & Information Tools
-
-### duckduckgo
-
-**Purpose:** Web search for current information and facts
-
-**Category:** Search / Information Retrieval
-
+**Toolset ID:** `duckduckgo`  
+**Category:** Information Gathering  
 **Authentication:** None required
 
-**Toolset name:** `"duckduckgo"`
+Web search capabilities for finding current information.
 
-**Capabilities:**
-- Search web content
-- Find current information
-- Retrieve factual data
-- Discover relevant sources
+#### Capabilities
 
-**Best for:**
-- Current events and news
-- Product research and comparisons
-- Fact-checking and verification
-- Finding documentation and resources
+- 🔍 General web search
+- 📰 Recent news and articles
+- 📚 Reference information
+- 🎯 Targeted queries
+- 🌐 Multi-language support
 
-**Usage example:**
-```json
-{
-  "name": "researcher",
-  "description": "Researches topics using web search",
-  "instructions": [
-    {
-      "content": "When users request information:\n1. Use web search to find current, accurate data\n2. Cross-reference multiple sources\n3. Always cite sources with URLs\n4. Note publication dates for time-sensitive information\n5. Verify facts before presenting"
-    }
-  ],
-  "toolsets": ["duckduckgo"]
-}
+#### Configuration
+
+```yaml
+agents:
+  researcher:
+    toolsets:
+      - duckduckgo
+    instructions:
+      - |
+          Use duckduckgo to search for current information.
+          Synthesize results from multiple sources.
+          Always cite sources when presenting findings.
 ```
 
-**Rate limits:** Standard web search rate limits apply
+#### Usage Examples
 
-**Notes:**
-- Returns text-based search results
-- No image or video search
-- Respects privacy (no tracking)
-- May have regional variations
+**Research Assistant:**
+```yaml
+research_agent:
+  toolsets:
+    - duckduckgo
+  instructions:
+    - |
+        Research workflow:
+        1. Search duckduckgo for topic
+        2. Review top 5-10 results
+        3. Cross-reference facts
+        4. Identify authoritative sources
+        5. Present synthesized findings with citations
+```
+
+**Fact Checker:**
+```yaml
+fact_checker:
+  toolsets:
+    - duckduckgo
+  instructions:
+    - |
+        Fact checking:
+        1. Search for claim using duckduckgo
+        2. Find multiple independent sources
+        3. Assess source credibility
+        4. Report: Confirmed / Disputed / Unverified
+```
+
+**News Researcher:**
+```yaml
+news_researcher:
+  toolsets:
+    - duckduckgo
+  instructions:
+    - |
+        Find recent news:
+        - Add "news" or date filters to queries
+        - Focus on reputable news sources
+        - Check multiple outlets for coverage
+        - Note publication dates
+```
+
+#### Best Practices
+
+**Effective Queries:**
+- ✅ Be specific and targeted
+- ✅ Use quotes for exact phrases
+- ✅ Include relevant keywords
+- ✅ Filter by date when needed
+
+**Result Processing:**
+- ✅ Review multiple results
+- ✅ Cross-reference information
+- ✅ Cite sources
+- ✅ Note conflicting information
+
+**Limitations:**
+- ⚠️ Results may be minutes to hours old
+- ⚠️ Source quality varies
+- ⚠️ Rate limits apply
+- ⚠️ Cannot access paywalled content
 
 ---
 
-### weather-tool
+### Memory Server
 
-**Purpose:** Get current weather conditions and forecasts
+**Toolset ID:** `memory-server`  
+**Category:** Data Persistence  
+**Authentication:** Automatic (user-scoped)
 
-**Category:** Information / Weather
+Persistent key-value storage for user data, preferences, and context.
 
+#### Capabilities
+
+- 💾 Store user preferences
+- 📝 Save conversation context
+- 🔖 Bookmark important information
+- 📊 Track user data over time
+- 🔒 User-isolated storage (data privacy)
+
+#### Configuration
+
+```yaml
+agents:
+  personalized_assistant:
+    toolsets:
+      - memory-server
+    instructions:
+      - |
+          Use memory-server to provide personalized experience:
+          - Retrieve user preferences at start of conversation
+          - Store new preferences as user provides them
+          - Remember important context between sessions
+```
+
+#### Key Structure
+
+Use descriptive, hierarchical keys:
+
+```
+user_preferences          # General user preferences
+dietary_restrictions      # Specific preference type
+shopping_history_{date}   # Time-stamped data
+conversation_context      # Session context
+favorites_products        # Collections
+settings_{category}       # Configuration
+```
+
+#### Usage Examples
+
+**User Preferences:**
+```yaml
+shopping_assistant:
+  toolsets:
+    - memory-server
+  instructions:
+    - |
+        Preference management:
+        
+        On first interaction:
+        - Check memory-server for key "user_preferences"
+        - If not found, ask user about preferences
+        - Store preferences with key "user_preferences"
+        
+        For each session:
+        - Load preferences at start
+        - Apply to recommendations
+        - Update based on user feedback
+        - Save updates back to memory-server
+```
+
+**Conversation Context:**
+```yaml
+content_assistant:
+  toolsets:
+    - memory-server
+  instructions:
+    - |
+        Context persistence:
+        
+        At conversation start:
+        - Retrieve key "current_project" for ongoing work
+        
+        During conversation:
+        - Update "current_project" with progress
+        - Store "recent_topics" for quick reference
+        
+        At conversation end:
+        - Save final state to "current_project"
+        - Store summary in "session_history_{timestamp}"
+```
+
+**Learning Agent:**
+```yaml
+learning_assistant:
+  toolsets:
+    - memory-server
+  instructions:
+    - |
+        Learn from interactions:
+        
+        Store with structured keys:
+        - "user_skill_level_{topic}": beginner/intermediate/advanced
+        - "user_interests": Array of interest areas
+        - "completed_tutorials": Track progress
+        - "feedback_history": Learn from corrections
+        
+        Adapt teaching based on stored data.
+```
+
+**Shopping History:**
+```yaml
+product_recommender:
+  toolsets:
+    - memory-server
+  instructions:
+    - |
+        Track shopping behavior:
+        
+        Store:
+        - "viewed_products": Recently viewed items
+        - "purchased_products": Purchase history
+        - "favorite_brands": Preferred brands
+        - "price_sensitivity": Budget preferences
+        
+        Use history to:
+        - Avoid recommending recently viewed items
+        - Suggest complementary products
+        - Respect brand preferences
+        - Match budget expectations
+```
+
+#### Best Practices
+
+**Key Naming:**
+- ✅ Use descriptive names: `dietary_restrictions` not `dr`
+- ✅ Use snake_case: `user_preferences`
+- ✅ Include timestamps when needed: `session_{timestamp}`
+- ✅ Namespace related data: `settings_*`, `history_*`
+
+**Data Structure:**
+- ✅ Store as JSON for complex data
+- ✅ Include metadata (timestamps, versions)
+- ✅ Keep values reasonably sized (< 10KB)
+- ✅ Use separate keys for separate concerns
+
+**Data Management:**
+- ✅ Check for existence before retrieval
+- ✅ Handle missing keys gracefully
+- ✅ Validate retrieved data format
+- ✅ Update stale data
+- ✅ Clean up old data periodically
+
+**Privacy:**
+- ❌ Never store sensitive data (passwords, payment info)
+- ❌ Don't store personally identifiable information unnecessarily
+- ✅ Store only what's needed for functionality
+- ✅ Respect user data deletion requests
+
+---
+
+### Notification Server
+
+**Toolset ID:** `notification-server`  
+**Category:** Communication  
+**Authentication:** Automatic (user-scoped)
+
+Send push notifications to users.
+
+#### Capabilities
+
+- 📬 Push notifications to user devices
+- ⏰ Reminder and alert notifications
+- 📢 Status update notifications
+- 🔔 Real-time alerts
+- 📱 Cross-platform delivery
+
+#### Configuration
+
+```yaml
+agents:
+  reminder_agent:
+    toolsets:
+      - notification-server
+    instructions:
+      - |
+          Send notifications for:
+          - Upcoming appointments (15 min before)
+          - Task deadlines (1 hour before)
+          - Important status changes
+          
+          Keep messages concise and actionable.
+```
+
+#### Usage Examples
+
+**Reminder Service:**
+```yaml
+reminder_agent:
+  toolsets:
+    - google-calendar
+    - notification-server
+  instructions:
+    - |
+        Reminder workflow:
+        
+        Every 15 minutes:
+        1. Check google-calendar for events in next hour
+        2. For each upcoming event:
+           - Send notification-server alert
+           - Include: event title, time, location
+           - Add action: "View Details"
+        3. Mark notification as sent (avoid duplicates)
+```
+
+**Status Updates:**
+```yaml
+process_monitor:
+  toolsets:
+    - notification-server
+    - memory-server
+  instructions:
+    - |
+        Process monitoring:
+        
+        When long-running task completes:
+        1. Send notification-server update:
+           - "Your report is ready"
+           - "Click to view results"
+        2. Store completion in memory-server
+        3. Include summary in notification
+```
+
+**Alert System:**
+```yaml
+alert_agent:
+  toolsets:
+    - notification-server
+  instructions:
+    - |
+        Alert for critical events:
+        
+        Severity levels:
+        - High: Immediate notification with priority flag
+        - Medium: Standard notification
+        - Low: Non-urgent notification
+        
+        Include:
+        - Clear description of event
+        - Impact or urgency
+        - Recommended action
+        - Link to details
+```
+
+**Smart Notifications:**
+```yaml
+smart_notifier:
+  toolsets:
+    - notification-server
+    - memory-server
+  instructions:
+    - |
+        Intelligent notification:
+        
+        Check memory-server for:
+        - User notification preferences
+        - Quiet hours setting
+        - Notification frequency limits
+        
+        Respect preferences:
+        - Don't send during quiet hours
+        - Batch low-priority notifications
+        - Limit frequency (max 5/hour)
+        
+        Store notification history in memory-server.
+```
+
+#### Best Practices
+
+**Message Content:**
+- ✅ Keep under 100 characters
+- ✅ Start with most important info
+- ✅ Include clear action if needed
+- ✅ Use friendly, human tone
+
+**Timing:**
+- ✅ Consider user timezone
+- ✅ Respect quiet hours
+- ✅ Don't spam (rate limit)
+- ✅ Time-sensitive first
+
+**User Experience:**
+- ✅ Make notifications actionable
+- ✅ Provide context
+- ✅ Allow dismissal
+- ✅ Don't interrupt unless urgent
+
+**Examples:**
+
+**Good:**
+```
+✅ "Meeting in 15 min: Design Review (Room 3B)"
+✅ "Your report is ready. Tap to view."
+✅ "⚠️ Server alert: High CPU usage detected"
+```
+
+**Poor:**
+```
+❌ "Notification" (not descriptive)
+❌ "Hey there! So like, there's this thing that happened..." (too long/casual)
+❌ Sending 20 notifications in 5 minutes (spam)
+```
+
+---
+
+### Weather Tool
+
+**Toolset ID:** `weather-tool`  
+**Category:** Information Gathering  
 **Authentication:** None required
 
-**Toolset name:** `"weather-tool"`
+Real-time weather data and forecasts.
 
-**Capabilities:**
-- Current weather conditions
-- Temperature, humidity, wind
-- Weather forecasts
-- Severe weather alerts (US)
+#### Capabilities
 
-**Best for:**
-- Weather inquiries
-- Travel planning
-- Event scheduling
-- Outdoor activity planning
+- 🌡️ Current conditions
+- 📅 Multi-day forecasts
+- ⚠️ Severe weather alerts
+- 🌍 Global coverage
+- 📊 Detailed metrics (temp, humidity, wind, etc.)
 
-**Usage example:**
-```json
-{
-  "name": "weather_assistant",
-  "description": "Provides weather information",
-  "instructions": [
-    {
-      "content": "Provide weather information clearly:\n- Current conditions: temperature, conditions, wind\n- Forecast: summarize next few days\n- Recommendations: appropriate for conditions\n- Alerts: highlight any severe weather warnings\n\nAlways specify location and time for context."
-    }
-  ],
-  "toolsets": ["weather-tool"]
-}
+#### Configuration
+
+```yaml
+agents:
+  weather_assistant:
+    toolsets:
+      - weather-tool
+    instructions:
+      - |
+          Provide weather information:
+          - Current conditions with all details
+          - Multi-day forecasts when asked
+          - Alert users to severe weather
+          - Format temperatures based on user preference
 ```
 
-**Coverage:** United States (National Weather Service data)
+#### Usage Examples
 
-**Rate limits:** Reasonable usage limits apply
+**Weather Assistant:**
+```yaml
+weather_agent:
+  toolsets:
+    - weather-tool
+  instructions:
+    - |
+        Weather information:
+        
+        For current conditions:
+        - Temperature and "feels like"
+        - Weather description (sunny, cloudy, etc.)
+        - Humidity, wind speed, visibility
+        - Precipitation if any
+        
+        For forecasts:
+        - Daily high/low
+        - Precipitation chance
+        - General conditions
+        - Day-by-day breakdown
+        
+        For severe weather:
+        - Alert type and level
+        - Affected areas
+        - Duration
+        - Safety recommendations
+```
 
-**Notes:**
-- US-focused weather data
-- Updates every hour
-- Includes severe weather alerts
+**Travel Planner:**
+```yaml
+travel_planner:
+  toolsets:
+    - weather-tool
+    - memory-server
+  instructions:
+    - |
+        Travel weather planning:
+        
+        For trip destination:
+        1. Get weather-tool forecast for travel dates
+        2. Analyze conditions:
+           - Ideal weather: outdoor activities
+           - Rainy: indoor alternatives
+           - Extreme weather: warnings
+        3. Provide packing recommendations
+        4. Suggest activity adjustments
+        5. Store itinerary in memory-server
+```
+
+**Activity Recommender:**
+```yaml
+activity_recommender:
+  toolsets:
+    - weather-tool
+  instructions:
+    - |
+        Weather-based recommendations:
+        
+        Check weather-tool for today + weekend:
+        
+        Sunny & warm:
+        - Outdoor activities
+        - Parks, beaches
+        - Sports
+        
+        Rainy:
+        - Indoor venues
+        - Museums, movies
+        - Indoor sports
+        
+        Extreme weather:
+        - Stay home suggestions
+        - Safety-first recommendations
+```
+
+#### Best Practices
+
+**Location Handling:**
+- ✅ Support city names, ZIP codes, coordinates
+- ✅ Confirm location if ambiguous
+- ✅ Store preferred location in memory-server
+- ✅ Handle location errors gracefully
+
+**Temperature Units:**
+- ✅ Ask user preference (F/C)
+- ✅ Store preference in memory-server
+- ✅ Convert consistently
+- ✅ Display both if helpful
+
+**Presentation:**
+- ✅ Human-friendly descriptions
+- ✅ Relevant details for context
+- ✅ Highlight severe weather
+- ✅ Include timestamps
 
 ---
 
-## Storage & Data Tools
+### Google Calendar
 
-### memory-server
+**Toolset ID:** `google-calendar`  
+**Category:** External Service  
+**Authentication:** OAuth required
 
-**Purpose:** Store and retrieve persistent data across sessions
+Calendar integration for event management.
 
-**Category:** Storage / Database
+#### Capabilities
 
-**Authentication:** None required (user-scoped)
+- 📅 View calendar events
+- ➕ Create new events
+- ✏️ Update existing events
+- 🗑️ Delete events
+- 🔍 Search events
+- 👥 Manage attendees
+- ⏰ Set reminders
 
-**Toolset name:** `"memory-server"`
+#### Configuration
 
-**Capabilities:**
-- Store user data persistently
-- Retrieve stored information
-- Update existing data
-- Delete outdated information
-- Search stored memories
-- Category-based organization
-
-**Best for:**
-- User preferences and settings
-- Shopping lists and wishlists
-- Personal notes and reminders
-- Historical data and patterns
-- Session continuity
-
-**Usage example:**
-```json
-{
-  "name": "preference_manager",
-  "description": "Manages user preferences and history",
-  "instructions": [
-    {
-      "content": "Store user preferences for personalization:\n\n**Storing:**\n- Save preferences with descriptive categories\n- Use consistent naming conventions\n- Include context for future reference\n\n**Retrieving:**\n- Search memories by category or keywords\n- Combine multiple stored preferences\n- Note when preferences might be outdated\n\n**Privacy:**\n- Only store information user explicitly wants saved\n- Respect deletion requests immediately\n- Don't share personal data across users"
-    }
-  ],
-  "toolsets": ["memory-server"]
-}
+```yaml
+agents:
+  scheduling_assistant:
+    toolsets:
+      - google-calendar
+      - notification-server
+    instructions:
+      - |
+          Manage calendar:
+          - View upcoming events
+          - Schedule new meetings
+          - Find available time slots
+          - Send reminders via notifications
 ```
 
-**Available operations:**
-- `create` - Store new memory
-- `read` - Retrieve by ID
-- `update` - Modify existing memory
-- `delete` - Remove memory
-- `list` - List all memories (with filters)
-- `search` - Search by keywords
+#### Usage Examples
 
-**Data structure:**
-```json
-{
-  "id": "generated-uuid",
-  "userId": "user-id",
-  "agentId": "agent-id",
-  "content": "The stored information",
-  "category": "preferences",
-  "createdAt": "2025-10-25T10:30:00Z"
-}
+**Scheduling Assistant:**
+```yaml
+scheduler:
+  toolsets:
+    - google-calendar
+    - notification-server
+  instructions:
+    - |
+        Scheduling workflow:
+        
+        To schedule meeting:
+        1. Query google-calendar for conflicts
+        2. Find available time slots
+        3. Propose options to user
+        4. Create event in google-calendar
+        5. Send confirmation via notification-server
+        
+        To find availability:
+        1. Check google-calendar for date range
+        2. Identify free blocks
+        3. Consider preferences (morning/afternoon)
+        4. Suggest optimal times
 ```
 
-**Storage scope:**
-- User-scoped: Each user has isolated data
-- Agent-scoped: Memories tied to specific agent
-- Persistent: Survives system restarts
+**Meeting Preparation:**
+```yaml
+meeting_prep:
+  toolsets:
+    - google-calendar
+    - memory-server
+    - notification-server
+  instructions:
+    - |
+        Meeting preparation:
+        
+        15 minutes before meeting:
+        1. Retrieve meeting from google-calendar
+        2. Load related notes from memory-server
+        3. Prepare agenda/context
+        4. Send prep notification-server alert
+        
+        After meeting:
+        1. Ask for notes
+        2. Store in memory-server linked to event
+        3. Set follow-up reminders if needed
+```
 
-**Notes:**
-- DynamoDB-backed for reliability
-- Automatic user isolation
-- Supports categories for organization
-- Full-text search capabilities
+**Calendar Analysis:**
+```yaml
+calendar_analyst:
+  toolsets:
+    - google-calendar
+  instructions:
+    - |
+        Calendar insights:
+        
+        Analyze google-calendar events:
+        - Meeting time by category
+        - Free time availability
+        - Busiest days/times
+        - Recurring meeting load
+        
+        Provide:
+        - Time management insights
+        - Schedule optimization suggestions
+        - Work-life balance assessment
+```
+
+#### Best Practices
+
+**Event Creation:**
+- ✅ Include all relevant details (title, time, location, description)
+- ✅ Set appropriate reminders
+- ✅ Add attendees when known
+- ✅ Use clear, descriptive titles
+
+**Time Handling:**
+- ✅ Respect user timezone
+- ✅ Confirm times before creating events
+- ✅ Handle all-day events appropriately
+- ✅ Consider duration (30min, 1hr defaults)
+
+**Privacy:**
+- ✅ Ask before reading calendar
+- ✅ Only access needed date ranges
+- ✅ Don't expose sensitive event details unnecessarily
+- ✅ Respect calendar visibility settings
 
 ---
 
-## Communication Tools
+## Administrator-Deployed Tools
 
-### notification-server
+Your organization's administrator may deploy additional custom tools for specific business needs:
 
-**Purpose:** Send push notifications to users
+### Product Catalog Tool
 
-**Category:** Communication / Alerts
-
-**Authentication:** None required (user-scoped)
-
-**Toolset name:** `"notification-server"`
-
-**Capabilities:**
-- Send push notifications
-- Schedule future notifications
-- Manage notification preferences
-- Track delivery status
-
-**Best for:**
-- Reminders and alerts
-- Task completion notifications
-- Time-sensitive updates
-- Event notifications
-
-**Usage example:**
-```json
-{
-  "name": "reminder_agent",
-  "description": "Creates and manages reminders",
-  "instructions": [
-    {
-      "content": "Manage user reminders:\n\n**Creating reminders:**\n- Confirm time and content with user\n- Use clear, actionable notification text\n- Respect user's timezone\n\n**Notification best practices:**\n- Keep messages concise (under 100 characters)\n- Include actionable information\n- Avoid excessive notifications\n- Respect quiet hours (10 PM - 8 AM)\n\n**Follow-up:**\n- Confirm notification was scheduled\n- Provide way to cancel or modify\n- Note when notification will be sent"
-    }
-  ],
-  "toolsets": ["notification-server", "memory-server"]
-}
+**Example Configuration:**
+```yaml
+product_specialist:
+  toolsets:
+    - product-catalog
+  instructions:
+    - |
+        Search product-catalog:
+        - Filter by category, price range, availability
+        - Sort by relevance, price, rating
+        - Return top 5 matches
+        - Include: name, price, rating, stock status
 ```
 
-**Available operations:**
-- `send` - Send immediate notification
-- `schedule` - Schedule future notification
-- `cancel` - Cancel scheduled notification
-- `listScheduled` - List upcoming notifications
+### CRM Integration
 
-**Notification structure:**
-```json
-{
-  "title": "Reminder",
-  "message": "Your scheduled event starts in 30 minutes",
-  "scheduledFor": "2025-10-25T14:30:00Z"
-}
+**Example Configuration:**
+```yaml
+sales_agent:
+  toolsets:
+    - crm-tool
+  instructions:
+    - |
+        CRM operations:
+        - Look up customer history
+        - Update contact records
+        - Log interactions
+        - Track opportunities
 ```
 
-**Delivery:**
-- Push notifications to mobile devices
-- Requires user to have push token registered
-- Respects user notification preferences
+### Analytics Tool
 
-**Notes:**
-- User must enable push notifications
-- Timezone-aware scheduling
-- Delivery confirmation available
-
----
-
-## Integration Tools
-
-### google-calendar
-
-**Purpose:** Access and manage Google Calendar events
-
-**Category:** Integration / Calendar
-
-**Authentication:** OAuth 2.0 required
-
-**Toolset name:** `"google-calendar"`
-
-**Capabilities:**
-- View calendar events
-- Create new events
-- Update existing events
-- Delete events
-- Check availability
-- Manage attendees
-
-**Best for:**
-- Meeting scheduling
-- Calendar management
-- Availability checking
-- Event coordination
-
-**Usage example:**
-```json
-{
-  "name": "meeting_scheduler",
-  "description": "Schedules meetings and manages calendar",
-  "instructions": [
-    {
-      "content": "Help users manage their Google Calendar:\n\n**Viewing events:**\n- Check calendar before scheduling\n- Summarize upcoming events clearly\n- Note conflicts and double bookings\n\n**Scheduling:**\n- Confirm details before creating events\n- Suggest times based on availability\n- Add relevant attendees and locations\n- Set appropriate reminders\n\n**Modifications:**\n- Always confirm before changing events\n- Check with attendees for group events\n- Update all participants on changes"
-    }
-  ],
-  "toolsets": ["google-calendar"]
-}
+**Example Configuration:**
+```yaml
+analyst:
+  toolsets:
+    - analytics-tool
+  instructions:
+    - |
+        Query analytics:
+        - Retrieve metrics for date range
+        - Generate reports
+        - Calculate trends
+        - Export data for visualization
 ```
 
-**Available operations:**
-- `listEvents` - List calendar events
-- `createEvent` - Create new event
-- `updateEvent` - Modify existing event
-- `deleteEvent` - Remove event
-- `findAvailability` - Check free time slots
-
-**Authentication flow:**
-1. User grants calendar access (OAuth)
-2. System stores access token securely
-3. Agent uses token for calendar operations
-4. User can revoke access anytime
-
-**Permissions required:**
-- `https://www.googleapis.com/auth/calendar` - Full calendar access
-
-**Notes:**
-- Requires user to connect Google account
-- Respects calendar sharing settings
-- Works with multiple calendars
-- Supports recurring events
-
----
-
-## Tool Selection Guide
+## Tool Comparison
 
 ### By Use Case
 
-**Information Gathering:**
-- General web research → `duckduckgo`
-- Weather information → `weather-tool`
+| Use Case | Recommended Tools |
+|----------|------------------|
+| Research & Information | `duckduckgo`, `memory-server` |
+| Personalization | `memory-server` |
+| Scheduling & Time | `google-calendar`, `notification-server` |
+| Weather & Location | `weather-tool`, `memory-server` |
+| Alerts & Updates | `notification-server` |
+| Data Persistence | `memory-server` |
+| External API | Administrator-deployed tools |
 
-**Data Management:**
-- User preferences → `memory-server`
-- Personal data → `memory-server`
+### By Latency
 
-**Communication:**
-- Reminders → `notification-server`
-- Alerts → `notification-server`
+| Tool | Latency | Use When |
+|------|---------|----------|
+| `memory-server` | Very Low (10-50ms) | Always acceptable |
+| `notification-server` | Low (50-200ms) | Always acceptable |
+| `weather-tool` | Medium (200-800ms) | Acceptable for most uses |
+| `google-calendar` | Medium (300-1000ms) | Acceptable for most uses |
+| `duckduckgo` | High (500-2000ms) | When current info needed |
 
-**Scheduling:**
-- Calendar events → `google-calendar`
-- Availability checking → `google-calendar`
+### By Data Privacy
 
-**Workflow Management:**
-- Agent switching → `switch_agent` (automatic)
-- Task delegation → `transfer_task` (automatic)
+| Tool | Privacy Level | Data Handling |
+|------|--------------|---------------|
+| `memory-server` | High | User-isolated, encrypted |
+| `notification-server` | High | User-scoped delivery |
+| `google-calendar` | Medium | OAuth-protected, Google privacy policy |
+| `weather-tool` | High | No personal data |
+| `duckduckgo` | High | No personal data in queries |
 
-### By Agent Type
+## Tool Discovery
 
-**Research Agents:**
-```json
-"toolsets": ["duckduckgo"]
+### Checking Available Tools
+
+Your administrator can provide a list of available tools for your deployment.
+
+### Requesting New Tools
+
+If you need a tool that's not available:
+
+1. Identify the specific capability needed
+2. Check if existing tools can be combined
+3. Request custom tool from administrator
+4. Provide use case and requirements
+
+### Testing Tools
+
+Test tool availability:
+
+```yaml
+test_agent:
+  toolsets:
+    - tool-to-test
+  instructions:
+    - |
+        Test tool functionality:
+        - Verify tool responds
+        - Check response format
+        - Test error handling
+        - Validate permissions
 ```
-
-**Personal Assistants:**
-```json
-"toolsets": ["memory-server", "notification-server", "google-calendar"]
-```
-
-**Shopping Assistants:**
-```json
-"toolsets": ["duckduckgo", "memory-server"]
-```
-
-**Content Creation:**
-```json
-"toolsets": ["duckduckgo"]
-```
-
-**Coordinators:**
-```json
-// Usually no tools - just delegates via transfer_task
-"toolsets": []
-```
-
-## Advanced: Tool Exclusions
-
-Conditionally disable tools based on settings:
-
-```json
-{
-  "name": "data_manager",
-  "toolsets": [
-    {
-      "name": "memory-server",
-      "exclude": [
-        {
-          "tool": "delete",
-          "if": "setting.readOnlyMode == true"
-        },
-        {
-          "tool": "update",
-          "if": "setting.readOnlyMode == true"
-        }
-      ]
-    }
-  ]
-}
-```
-
-## Troubleshooting
-
-### Tool Not Available
-
-**Error:** "Unknown or disabled MCP toolset"
-
-**Checklist:**
-1. Verify toolset name spelling (case-sensitive)
-2. Check tool is registered in `mcp.servers.json`
-3. Ensure server is running (for external tools)
-4. Review system logs for errors
-
-### Authentication Failures
-
-**Error:** "Authentication required" or "Permission denied"
-
-**For OAuth tools (google-calendar):**
-1. User must complete OAuth flow
-2. Check token hasn't expired
-3. Verify required scopes are granted
-4. Re-authenticate if needed
-
-### Tool Call Failures
-
-**Error:** Tool operation fails or returns error
-
-**Debugging steps:**
-1. Check tool parameters are correct format
-2. Verify network connectivity (external tools)
-3. Review rate limits and quotas
-4. Check tool-specific logs
-5. Test tool independently
 
 ## Next Steps
 
-- **[Using Tools](using-tools.md)** - Best practices for tool integration
-- **[Creating Tools](creating-tools.md)** - Build custom MCP servers
-- **[Agent Examples](../agents/examples.md)** - See tools in action
-- **[Tool Security](using-tools.md#security)** - Security considerations
+- **[Using Tools](using-tools.md)** - Best practices and integration patterns
+- **[Tools Overview](overview.md)** - Understanding tool architecture
+- **[Agent Examples](../agents/examples.md)** - Teams with tool integration
 
 ---
 
 **Related:**  
-[Tools Overview](overview.md) | [Using Tools](using-tools.md) | [Creating Agents](../agents/creating-agents.md)
-
+[Overview](overview.md) | [Using Tools](using-tools.md) | [Creating Teams](../agents/creating-agents.md)

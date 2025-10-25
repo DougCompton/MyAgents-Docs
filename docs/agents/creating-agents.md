@@ -1,524 +1,1003 @@
-# Creating Custom Agents
+# Creating Agent Teams
 
-This guide walks you through creating production-ready AI agents step by step.
+This guide walks you through creating your first AI agent team from scratch.
 
-## Before You Begin
+## Prerequisites
 
-### What You'll Need
+Before creating teams, ensure you have:
 
-- Text editor for JSON files
-- Access to `apps/api/src/agents/` directory
-- Understanding of your agent's purpose and workflow
-- List of required tools (optional)
+- ✅ Access to the MyAgents API
+- ✅ Understanding of [Team Architecture](overview.md)
+- ✅ Familiarity with [Agent Types](agent-types.md)
+- ✅ Basic YAML knowledge
 
-### Planning Your Agent
+## Quick Start
 
-Before writing code, answer these questions:
+The fastest way to create a team:
 
-1. **What problem does this agent solve?**
-2. **Is it a single task or complex workflow?**
-3. **Does it need to maintain conversation context?**
-4. **What external tools or data does it need?**
-5. **Are there different modes or configurations?**
+1. **Create YAML file** in `apps/api/src/agents/`
+2. **Define team identity** (id, name, description)
+3. **Add agents** with instructions
+4. **Restart API** to load team
+5. **Test** via chat interface
 
-## Step-by-Step Guide
+## Step-by-Step Example
 
-### Step 1: Define Agent Identity
+Create `apps/api/src/agents/weather-team.yaml`:
 
-Start with the basic structure:
+```yaml
+version: "1"
+id: weather-team
+name: Weather Team
+description: Provides current weather and forecasts
+default_agent: weather_helper
 
-```json
-{
-  "id": "your-agent-id",
-  "name": "Your Agent Name",
-  "description": "Clear description of what your agent does",
-  "interactive": false,
-  "settings": [],
-  "agents": []
-}
+agents:
+  weather_helper:
+    type: llm
+    name: Weather Helper
+    description: Retrieves weather information
+    instructions:
+      - |
+          You provide weather information using the weather tool.
+          Present forecasts clearly with temperatures, conditions, and alerts.
+    toolsets:
+      - weather-tool
 ```
 
-**Key decisions:**
+Restart the API, and your team is ready!
 
-**Agent ID** (`id`)
-- Use lowercase with hyphens
-- Make it descriptive: `grocery-assistant`, `report-generator`
-- Must be unique across all agents
+## Step 1: Team Identity
 
-**Agent Name** (`name`)
-- User-facing display name
-- Can include spaces and capitals
-- Should clearly indicate purpose
+Every team needs a unique identity for routing and discovery.
 
-**Description** (`description`)
-- Single sentence summary
-- Used by switchboard for routing
-- Focus on capabilities and use cases
+### Required Fields
 
-**Interactive Mode** (`interactive`)
-- `true`: Agent stays active across messages (conversations, iterative work)
-- `false` or omitted: Returns to switchboard after each task (quick queries)
+#### `version` (string)
+Schema version for future compatibility.
 
-### Step 2: Design Your Personas
-
-Decide if you need one or multiple personas:
-
-#### Single Persona (Simple Agents)
-
-For straightforward tasks with no workflow complexity:
-
-```json
-{
-  "id": "currency-converter",
-  "name": "Currency Converter",
-  "description": "Converts between currencies using current exchange rates",
-  "agents": [
-    {
-      "name": "converter",
-      "description": "Performs currency conversions",
-      "instructions": [
-        {
-          "content": "You convert currency amounts using current exchange rates. Format:\n- Input: Amount and currencies (e.g., '100 USD to EUR')\n- Output: Converted amount with rate and date\n- Always show calculation: '100 USD × 0.92 = 92 EUR (rate as of DATE)'\n\nBe precise with numbers and always specify the rate source."
-        }
-      ],
-      "toolsets": ["duckduckgo"]
-    }
-  ]
-}
+```yaml
+version: "1"  # Always use "1" currently
 ```
 
-#### Multiple Personas (Complex Workflows)
+#### `id` (string)
+Unique system identifier for this team.
 
-For tasks requiring specialization or sequential steps:
+**Requirements:**
+- Lowercase letters, numbers, hyphens only
+- Start with letter
+- Between 3-50 characters
+- Unique across all teams
 
-```json
-{
-  "id": "content-team",
-  "name": "Content Creation Team",
-  "description": "Creates professional content through coordinated research, writing, and editing",
-  "interactive": true,
-  "agents": [
-    {
-      "name": "project_manager",
-      "description": "Coordinates the content creation workflow",
-      "instructions": [
-        {
-          "content": "You manage a content creation team. For each request:\n1. Delegate to 'researcher' to gather information\n2. Delegate to 'writer' to create content\n3. Delegate to 'editor' for final review\n\nUse transfer_task to delegate. Present final result to user."
-        }
-      ],
-      "subAgents": ["researcher", "writer", "editor"]
-    },
-    {
-      "name": "researcher",
-      "description": "Gathers and organizes information",
-      "instructions": [
-        {
-          "content": "Research the requested topic thoroughly. Search for current, accurate information from reliable sources. Organize findings clearly with source citations. Focus on facts, statistics, and expert opinions."
-        }
-      ],
-      "toolsets": ["duckduckgo"]
-    },
-    {
-      "name": "writer",
-      "description": "Creates polished content",
-      "instructions": [
-        {
-          "content": "Write engaging content based on research provided. Structure:\n- Compelling introduction\n- Clear body sections with headers\n- Strong conclusion\n\nUse professional but accessible tone. Include concrete examples."
-        }
-      ]
-    },
-    {
-      "name": "editor",
-      "description": "Reviews and improves content",
-      "instructions": [
-        {
-          "content": "Review content for:\n- Grammar and spelling\n- Clarity and flow\n- Accuracy and completeness\n- Engagement and readability\n\nMake improvements and note key changes made."
-        }
-      ]
-    }
-  ]
-}
+**Examples:**
+```yaml
+# Good
+id: weather-team
+id: customer-support
+id: content-creator-v2
+
+# Bad
+id: Weather Team  # No spaces
+id: wt            # Too short
+id: _weather      # No leading underscore
 ```
 
-### Step 3: Write Effective Instructions
+#### `name` (string)
+User-facing display name.
 
-Instructions are the most critical part of your agent. They define behavior, constraints, and output format.
+**Guidelines:**
+- Clear and descriptive
+- Title case recommended
+- 5-50 characters
+- Can include spaces and special characters
 
-#### Instruction Structure
+**Examples:**
+```yaml
+# Good
+name: Weather Assistant
+name: Customer Support Team
+name: Blog Writing & Editing
 
-```json
-{
-  "content": "Your detailed instructions here..."
-}
+# Bad
+name: wt              # Not descriptive
+name: Team            # Too generic
 ```
 
-Or with conditions:
+#### `description` (string)
+Brief summary of team capabilities - **critical for switchboard routing**.
 
-```json
-{
-  "content": "Instructions that apply when a setting is enabled...",
-  "if": "setting.settingName == true"
-}
+**Guidelines:**
+- One sentence, 50-200 characters
+- Describe what problems the team solves
+- Focus on user benefits, not internal implementation
+- Use active, specific language
+
+**Examples:**
+```yaml
+# Good - Specific and action-oriented
+description: Provides current weather conditions and multi-day forecasts for any location
+
+description: Routes customer support inquiries to specialized agents for technical, billing, or account issues
+
+description: Researches, writes, and edits blog posts with SEO optimization
+
+# Bad - Vague or implementation-focused
+description: A team that does weather stuff
+
+description: Uses agents to help users
+
+description: Has multiple personas for different tasks
 ```
 
-#### Instruction Best Practices
+#### `default_agent` (string)
+Entry point agent name - first agent that handles requests.
 
-**1. Define Role and Scope**
-
-```json
-{
-  "content": "You are a technical support specialist for a SaaS platform. Your responsibilities:\n- Diagnose technical issues\n- Provide step-by-step troubleshooting\n- Link to relevant documentation\n- Escalate complex issues to engineering\n\nYou do NOT handle billing or account management questions."
-}
+```yaml
+default_agent: coordinator  # Must match an agent name in agents section
 ```
 
-**2. Specify Business Rules**
+### Optional Fields
 
-```json
-{
-  "content": "Business rules:\n- Never recommend out-of-stock items without mentioning alternatives\n- Always provide 3-5 options at different price points\n- Flag products with ratings below 4.0 stars\n- Include estimated delivery times\n- Highlight current promotions or sales"
-}
+#### `interactive` (boolean)
+Controls whether team persists after processing requests.
+
+```yaml
+# Team stays active for multi-turn conversations
+interactive: true
+
+# Team returns to switchboard after each response (default)
+interactive: false
 ```
 
-**3. Define Output Format**
+**When to use `interactive: true`:**
+- Shopping and browsing experiences
+- Content creation and iteration
+- Multi-step workflows requiring context
+- Tutorial and learning experiences
 
-```json
-{
-  "content": "Format recommendations as:\n\n**Product Name** by Brand\n- Price: $XX.XX (Unit cost: $X.XX/oz)\n- Rating: ⭐ X.X (XXX reviews)\n- Key features: [bullet points]\n- Availability: In stock / Ships in X days\n\nLimit to 5 recommendations unless requested otherwise."
-}
+**When to use `interactive: false` (default):**
+- Quick lookups (weather, definitions, calculations)
+- Single-transaction tasks
+- Automated notifications
+- Background processing
+
+#### `settings` (object)
+Runtime configuration options accessible to agents.
+
+```yaml
+settings:
+  - name: verbose_mode
+    type: boolean
+    title: Verbose Output
+    description: Include detailed explanations
+    defaultValue: false
+  
+  - name: temperature_unit
+    type: string
+    title: Temperature Unit
+    description: Display temperature in Fahrenheit or Celsius
+    defaultValue: F
 ```
 
-**4. Handle Edge Cases**
+See [Settings](../advanced/settings.md) for complete documentation.
 
-```json
-{
-  "content": "Error handling:\n- If product unavailable: Suggest 2-3 alternatives\n- If price unavailable: Note 'Price varies' and explain\n- If unclear request: Ask clarifying questions\n- If outside expertise: Politely redirect to appropriate resource"
-}
+### Complete Team Header
+
+```yaml
+version: "1"
+id: support-team
+name: Customer Support Team
+description: Routes customer inquiries to specialized support agents for technical, billing, and account assistance
+interactive: true
+default_agent: coordinator
+
+settings:
+  - name: priority_mode
+    type: boolean
+    title: Priority Mode
+    description: Fast-track urgent requests
+    defaultValue: false
+
+agents:
+  # Agents defined below...
 ```
 
-### Step 4: Add Configuration Settings (Optional)
+## Step 2: Define Agents
 
-Settings make your agent flexible and reusable.
+Agents are the specialized roles that make up your team.
 
-#### When to Add Settings
+### Single-Agent Team
 
-Add settings when you need to:
-- Toggle features on/off
-- Support different user segments
-- Customize output formats
-- Adjust behavior without code changes
+The simplest team has one agent handling all interactions.
 
-#### Setting Types
+```yaml
+version: "1"
+id: calculator-team
+name: Calculator Team
+description: Performs mathematical calculations
+default_agent: calculator
 
-**Boolean Settings** - For toggles
-
-```json
-{
-  "name": "includeImages",
-  "title": "Include Images",
-  "type": "bool",
-  "description": "Include product images in recommendations",
-  "defaultValue": true
-}
+agents:
+  calculator:
+    type: llm
+    name: Calculator
+    description: Performs calculations
+    instructions:
+      - |
+          You perform mathematical calculations. Handle:
+          - Basic arithmetic
+          - Unit conversions
+          - Percentage calculations
+          - Statistical operations
+          
+          Show your work and provide clear explanations.
 ```
 
-**String Settings** - For choices
+**Best for:**
+- Specialized utilities
+- Single-purpose tools
+- Simple workflows
 
-```json
-{
-  "name": "sortOrder",
-  "title": "Sort Order",
-  "type": "string",
-  "description": "Default sort order (relevance, price-low, price-high, rating)",
-  "defaultValue": "relevance"
-}
+### Multi-Agent Team
+
+Complex teams have multiple agents that coordinate.
+
+```yaml
+version: "1"
+id: shopping-team
+name: Shopping Team
+description: Assists with grocery shopping, meal planning, and product recommendations
+interactive: true
+default_agent: coordinator
+
+agents:
+  coordinator:
+    type: llm
+    name: Shopping Coordinator
+    description: Routes shopping requests
+    instructions:
+      - |
+          Route customer requests:
+          - Product searches → product_specialist
+          - Meal planning → meal_planner
+          - Price comparisons → price_analyst
+          
+          Use transfer_task to delegate.
+    sub_agents:
+      - product_specialist
+      - meal_planner
+      - price_analyst
+  
+  product_specialist:
+    type: llm
+    name: Product Specialist
+    description: Finds and recommends products
+    instructions:
+      - |
+          Search catalog for products matching customer needs.
+          Provide 3-5 recommendations with:
+          - Product name and description
+          - Price and size
+          - Rating and review summary
+          - Availability
+    toolsets:
+      - product-catalog
+  
+  meal_planner:
+    type: llm
+    name: Meal Planner
+    description: Creates meal plans and shopping lists
+    instructions:
+      - |
+          Create meal plans based on:
+          - Dietary restrictions
+          - Number of servings
+          - Budget constraints
+          - Cuisine preferences
+          
+          Generate shopping lists with quantities.
+  
+  price_analyst:
+    type: llm
+    name: Price Analyst
+    description: Compares prices and finds deals
+    instructions:
+      - |
+          Compare prices across brands and sizes.
+          Identify:
+          - Best value (price per unit)
+          - Current sales and discounts
+          - Bulk purchase savings
+          - Generic alternatives
+    toolsets:
+      - product-catalog
 ```
 
-**Number Settings** - For thresholds
+## Step 3: Agent Configuration
 
-```json
-{
-  "name": "maxResults",
-  "title": "Maximum Results",
-  "type": "number",
-  "description": "Maximum number of items to return",
-  "defaultValue": 10
-}
+Each agent requires specific configuration properties.
+
+### Required Properties
+
+#### `name` (string)
+Unique identifier within team scope.
+
+**Naming conventions:**
+```yaml
+# Good - Descriptive, snake_case
+name: product_specialist
+name: technical_support
+name: content_writer
+
+# Bad
+name: ps              # Too short
+name: agent1          # Not descriptive
+name: Product-Agent   # Use snake_case
 ```
 
-#### Using Settings in Instructions
+#### `description` (string)
+Brief summary of agent role (50-150 characters).
 
-Reference settings in conditional instructions:
+```yaml
+# Good
+description: Finds products matching customer requirements
+description: Handles technical troubleshooting and bug reports
+description: Creates engaging blog content with SEO optimization
 
-```json
-{
-  "instructions": [
-    {
-      "content": "Base instructions that always apply..."
-    },
-    {
-      "content": "\nBUDGET MODE: Prioritize value. Lead with store brands and economy options. Calculate per-unit pricing. Highlight sales and promotions.",
-      "if": "setting.budgetMode == true"
-    },
-    {
-      "content": "\nPREMIUM MODE: Focus on quality. Prioritize premium brands. Emphasize features and benefits over price.",
-      "if": "setting.budgetMode == false"
-    }
-  ]
-}
+# Bad
+description: Agent    # Not descriptive
+description: Does product stuff  # Too vague
 ```
 
-### Step 5: Integrate Tools
+#### `instructions` (array)
+Defines agent behavior - the most important configuration.
 
-Tools extend your agent's capabilities by connecting to external systems.
+**Structure:**
+```yaml
+instructions:
+  - "condition": |
+      Instructions when condition is true
+  - |
+      Default instructions (condition is empty string)
+```
 
-#### Available Tools
+**Basic Example:**
+```yaml
+instructions:
+  - |
+      You are a technical support agent.
+      
+      Responsibilities:
+      - Diagnose technical issues
+      - Provide step-by-step solutions
+      - Escalate complex problems
+      
+      Guidelines:
+      - Be patient and clear
+      - Confirm understanding before closing
+      - Document all resolutions
+```
 
-- **`duckduckgo`** - Web search
-- **`memory-server`** - Persistent data storage
-- **`notification-server`** - Push notifications
-- **`weather-tool`** - Weather information
-- **`google-calendar`** - Calendar integration
+**With Conditional Logic:**
+```yaml
+instructions:
+  - "settings.expert_mode": |
+      You are in expert mode. Provide:
+      - Technical details and internals
+      - Advanced configuration options
+      - Performance optimization tips
+      - Direct API access when relevant
+  - |
+      You are in standard mode. Provide:
+      - User-friendly explanations
+      - Step-by-step guides
+      - Visual aids when helpful
+      - No technical jargon
+```
+
+See [Conditional Instructions](../advanced/conditional-instructions.md) for advanced patterns.
+
+### Optional Properties
+
+#### `type` (string)
+Execution pattern for this agent.
+
+```yaml
+type: llm        # Interactive assistant (default)
+type: parallel   # Concurrent execution
+type: loop       # Iterative refinement
+type: sequence   # Sequential pipeline
+```
+
+See [Agent Types](agent-types.md) for detailed documentation.
+
+#### `model` (string)
+LLM provider for this agent.
+
+```yaml
+model: anthropic  # Claude (recommended for analysis, writing)
+model: gpt-4o     # GPT-4 (general purpose)
+```
+
+**When to specify:**
+- Cost optimization (different pricing)
+- Quality requirements (specific model strengths)
+- Performance needs (response time variations)
+
+**Model Strengths:**
+- **Claude (anthropic)**: Long-form writing, detailed analysis, complex reasoning
+- **GPT-4 (gpt-4o)**: General tasks, broad knowledge, consistent performance
+
+#### `sub_agents` (array of strings)
+Agents this agent can delegate to via `transfer_task`.
+
+```yaml
+coordinator:
+  sub_agents:
+    - specialist_1
+    - specialist_2
+    - specialist_3
+```
+
+**Important:**
+- Agent names must exist in team's `agents` section
+- Creates delegation hierarchy
+- Enables workflow orchestration
+
+#### `toolsets` (array of strings)
+External tools this agent can access.
+
+```yaml
+researcher:
+  toolsets:
+    - duckduckgo      # Web search
+    - memory-server   # Persistent storage
+```
+
+See [Available Tools](../tools/available-tools.md) for complete catalog.
+
+### Complete Agent Example
+
+```yaml
+content_writer:
+  type: llm
+  name: Content Writer
+  description: Creates SEO-optimized blog posts
+  model: anthropic
+  instructions:
+    - "settings.seo_mode": |
+        Create SEO-optimized content with:
+        - Target keyword integration (5-7 mentions)
+        - Meta description under 160 characters
+        - Header hierarchy (H2, H3)
+        - Internal linking opportunities
+        - Alt text for images
+    - |
+        Create engaging blog content with:
+        - Clear introduction with hook
+        - Structured body with subheadings
+        - Actionable takeaways
+        - Compelling conclusion
+        
+        Tone: Professional yet conversational
+        Length: 1000-1500 words
+  toolsets:
+    - duckduckgo
+    - memory-server
+  sub_agents:
+    - seo_analyst
+    - fact_checker
+```
+
+## Step 4: Agent Coordination
+
+### Delegation Patterns
+
+#### Hub-and-Spoke (Most Common)
+One coordinator routes to multiple specialists.
+
+```
+    Coordinator
+    /    |    \
+   /     |     \
+  A      B      C
+```
+
+```yaml
+agents:
+  coordinator:
+    sub_agents:
+      - specialist_a
+      - specialist_b
+      - specialist_c
+  
+  specialist_a:
+    # Configuration...
+  
+  specialist_b:
+    # Configuration...
+  
+  specialist_c:
+    # Configuration...
+```
+
+#### Hierarchical
+Multi-level delegation for complex workflows.
+
+```
+   Manager
+      |
+   Team Lead
+    /    \
+   A      B
+```
+
+```yaml
+agents:
+  manager:
+    sub_agents:
+      - team_lead
+  
+  team_lead:
+    sub_agents:
+      - specialist_a
+      - specialist_b
+  
+  specialist_a:
+    # Configuration...
+  
+  specialist_b:
+    # Configuration...
+```
+
+#### Sequential Pipeline
+Use `sequence` agent type for ordered processing.
+
+```
+A → B → C → D
+```
+
+```yaml
+agents:
+  pipeline:
+    type: sequence
+    sub_agents:
+      - stage_a
+      - stage_b
+      - stage_c
+      - stage_d
+```
+
+See [Agent Types](agent-types.md) and [Multi-Agent Workflows](../advanced/multi-agent.md).
+
+### Transfer Task Pattern
+
+Agents use the automatically available `transfer_task` function to delegate:
+
+```yaml
+coordinator:
+  instructions:
+    - |
+        Analyze the request type:
+        
+        - Technical questions: use transfer_task to delegate to technical_support
+        - Billing questions: use transfer_task to delegate to billing_support
+        - Account questions: use transfer_task to delegate to account_support
+        
+        Include relevant context when transferring.
+  sub_agents:
+    - technical_support
+    - billing_support
+    - account_support
+```
+
+**Key points:**
+- `transfer_task` is automatically available to agents with `sub_agents`
+- Agent names must match `sub_agents` array
+- Include context in transfer for continuity
+
+## Step 5: Add Tools
+
+Tools connect agents to external systems and data.
+
+### Available Toolsets
+
+Common toolsets include:
+- `duckduckgo` - Web search
+- `memory-server` - Persistent storage
+- `notification-server` - Push notifications
+- `weather-tool` - Weather data
+- `google-calendar` - Calendar integration
 
 See [Available Tools](../tools/available-tools.md) for complete list.
 
-#### Adding Tools to Personas
+### Tool Configuration
 
-```json
-{
-  "name": "product_finder",
-  "description": "Searches for products",
-  "instructions": [...],
-  "toolsets": ["duckduckgo", "memory-server"]
-}
+Add toolsets to agent configuration:
+
+```yaml
+researcher:
+  name: Researcher
+  description: Conducts web research
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Conduct thorough research using web search.
+        Store important findings in memory for future reference.
 ```
 
-#### Tool Selection Guidelines
+### Tool Usage in Instructions
 
-- Add tools only to personas that need them
-- Coordinator personas typically don't need tools (they delegate)
-- Specialist personas use tools to complete their specific tasks
-- Consider tool costs and rate limits
+Guide agents on when and how to use tools:
 
-### Step 6: Validate and Test
-
-#### Validation Checklist
-
-Before deploying, verify:
-
-- [ ] Valid JSON syntax (use a JSON validator)
-- [ ] All required fields present (`id`, `name`, `description`, `agents`)
-- [ ] Agent `id` is unique and follows naming convention
-- [ ] Each persona has `name`, `description`, and `instructions`
-- [ ] Boolean values are unquoted (`true`/`false`)
-- [ ] Setting types match `defaultValue` types
-- [ ] Setting names are unique within agent
-- [ ] Conditional expressions use correct syntax
-- [ ] Referenced toolsets exist in system
-- [ ] SubAgent references point to valid personas
-
-#### Testing Workflow
-
-1. **Save** agent file to `apps/api/src/agents/your-agent.json`
-2. **Restart** API service (if required for agent reload)
-3. **Check logs** for any loading errors
-4. **Test basic functionality** without settings
-5. **Test each setting** configuration if applicable
-6. **Test persona delegation** if multi-persona
-7. **Test with various inputs** including edge cases
-
-## Complete Example: E-Commerce Product Assistant
-
-Here's a complete, production-ready agent:
-
-```json
-{
-  "id": "product-assistant",
-  "name": "Product Shopping Assistant",
-  "description": "Helps customers find and compare products based on their needs and preferences",
-  "interactive": true,
-  "settings": [
-    {
-      "name": "budgetMode",
-      "title": "Budget-Conscious Mode",
-      "type": "bool",
-      "description": "Prioritize value and cost-effective options",
-      "defaultValue": false
-    },
-    {
-      "name": "priceRange",
-      "title": "Price Range",
-      "type": "string",
-      "description": "Preferred price range (budget, moderate, premium, luxury)",
-      "defaultValue": "moderate"
-    },
-    {
-      "name": "maxResults",
-      "title": "Maximum Results",
-      "type": "number",
-      "description": "Maximum number of products to show",
-      "defaultValue": 5
-    }
-  ],
-  "agents": [
-    {
-      "name": "shopping_coordinator",
-      "description": "Manages the product search and recommendation process",
-      "model": "anthropic",
-      "instructions": [
-        {
-          "content": "You coordinate product shopping assistance. When customers request product recommendations:\n\n1. Understand their needs, preferences, and constraints\n2. Delegate to 'product_searcher' to find options\n3. Present recommendations with clear rationale\n4. Answer follow-up questions\n5. Help with comparisons and decisions\n\nMaintain friendly, helpful tone throughout the conversation."
-        }
-      ],
-      "subAgents": ["product_searcher"]
-    },
-    {
-      "name": "product_searcher",
-      "description": "Searches for and evaluates products",
-      "model": "anthropic",
-      "instructions": [
-        {
-          "content": "You search for and evaluate products. For each request:\n\n**Search Process:**\n- Use web search to find current products\n- Focus on reputable retailers and brands\n- Check availability and pricing\n- Review customer ratings and reviews\n\n**Evaluation Criteria:**\n- Match to customer requirements\n- Value for money\n- Quality indicators (ratings, reviews, brand reputation)\n- Availability and shipping\n\n**Output Format:**\n\n**[Product Name]** by [Brand]\n- **Price:** $XX.XX ([per-unit if applicable])\n- **Rating:** ⭐ X.X ([review count] reviews)\n- **Key Features:**\n  • Feature 1\n  • Feature 2\n  • Feature 3\n- **Availability:** [In stock / Ships in X days]\n- **Why recommended:** [Brief rationale]\n\n**Rules:**\n- Provide exactly the configured maximum number of results\n- Always include pricing and availability\n- Flag products with <4.0 ratings\n- Note any current sales or promotions"
-        },
-        {
-          "content": "\n**BUDGET MODE ACTIVE:**\n- Lead with most affordable options\n- Prioritize store brands and budget-friendly choices\n- Calculate and show per-unit pricing\n- Highlight sales, discounts, and bulk options\n- Note value proposition in rationale",
-          "if": "setting.budgetMode == true"
-        },
-        {
-          "content": "\n**PRICE RANGE FILTER: Budget**\n- Focus on entry-level and economy products\n- Typical range: Under $25 for small items, under $100 for larger items\n- Emphasize best value for money",
-          "if": "setting.priceRange == \"budget\""
-        },
-        {
-          "content": "\n**PRICE RANGE FILTER: Premium**\n- Focus on high-quality, established brands\n- Typical range: $100-500 for most items\n- Emphasize quality, features, and reliability",
-          "if": "setting.priceRange == \"premium\""
-        },
-        {
-          "content": "\n**PRICE RANGE FILTER: Luxury**\n- Focus on top-tier, luxury brands\n- Price is secondary to quality and prestige\n- Emphasize craftsmanship, exclusivity, and brand heritage",
-          "if": "setting.priceRange == \"luxury\""
-        }
-      ],
-      "toolsets": ["duckduckgo"]
-    }
-  ]
-}
+```yaml
+shopping_assistant:
+  toolsets:
+    - product-catalog
+    - memory-server
+  instructions:
+    - |
+        When user asks about products:
+        1. Check memory-server for user preferences
+        2. Search product-catalog using preferences
+        3. Present 3-5 recommendations
+        4. Store user feedback in memory-server
 ```
 
-## Common Patterns and Templates
+### Tool Best Practices
 
-### Pattern 1: Single-Purpose Utility
+1. **Minimal Tools**: Only include tools agent actually needs
+2. **Clear Instructions**: Specify when to use each tool
+3. **Error Handling**: Guide agents on tool failures
+4. **Data Management**: Define what to store/retrieve from memory
 
-```json
-{
-  "id": "utility-agent",
-  "name": "Utility Agent",
-  "description": "Performs specific utility function",
-  "agents": [
-    {
-      "name": "processor",
-      "description": "Processes requests",
-      "instructions": [{"content": "Instructions..."}],
-      "toolsets": ["relevant-tool"]
-    }
-  ]
-}
+## Step 6: Testing & Validation
+
+### Local Testing
+
+1. **Place file** in `apps/api/src/agents/`
+2. **Restart API** to load team
+3. **Check logs** for loading errors
+4. **Test via chat** interface
+
+### Validation Checklist
+
+**Team Configuration:**
+- ✅ Unique `id` (no conflicts)
+- ✅ Descriptive `name` and `description`
+- ✅ `default_agent` matches an agent name
+- ✅ Valid YAML syntax
+
+**Agent Configuration:**
+- ✅ All agents have unique names
+- ✅ All agents have `description`
+- ✅ All agents have `instructions`
+- ✅ `sub_agents` reference valid agent names
+- ✅ `toolsets` reference available tools
+
+**Functionality:**
+- ✅ Default agent responds appropriately
+- ✅ Delegation works as expected
+- ✅ Tools are accessible and functional
+- ✅ Settings apply correctly (if used)
+
+### Common Issues
+
+**Team Not Loading**
+```
+Error: Duplicate team ID
+```
+- ✅ Check: Is `id` unique across all teams?
+- ✅ Fix: Choose different `id`
+
+**YAML Syntax Error**
+```
+Error: Invalid YAML at line 42
+```
+- ✅ Check: Proper indentation (use spaces, not tabs)
+- ✅ Check: Strings with colons in quotes
+- ✅ Check: Multiline strings use `|` correctly
+
+**Agent Not Found**
+```
+Error: Default agent 'coordinater' not found
+```
+- ✅ Check: Spelling matches exactly (case-sensitive)
+- ✅ Check: Agent exists in `agents` section
+
+**Tool Not Available**
+```
+Error: Toolset 'duck-duck-go' not found
+```
+- ✅ Check: Correct toolset name (e.g., `duckduckgo`)
+- ✅ Check: Toolset is registered with system
+
+### Debugging Tips
+
+1. **Check API Logs**: Look for loading and validation errors
+2. **Test Incrementally**: Start simple, add complexity gradually
+3. **Verify Syntax**: Use YAML validator before deploying
+4. **Review Examples**: Compare with working team configurations
+
+## Step 7: Deployment
+
+### Development Environment
+
+1. Place YAML file in `apps/api/src/agents/`
+2. Restart API server
+3. Team loads automatically
+
+### Production Deployment
+
+1. **Validate** thoroughly in development
+2. **Test** all functionality
+3. **Document** team capabilities
+4. **Deploy** via standard CI/CD pipeline
+5. **Monitor** usage and performance
+
+### Version Control
+
+```bash
+# Add team file to git
+git add apps/api/src/agents/my-team.yaml
+
+# Commit with descriptive message
+git commit -m "Add shopping team with meal planning"
+
+# Push to repository
+git push origin main
 ```
 
-### Pattern 2: Interactive Assistant
+## Examples by Use Case
 
-```json
-{
-  "id": "assistant-agent",
-  "name": "Assistant Agent",
-  "description": "Provides interactive assistance with context retention",
-  "interactive": true,
-  "agents": [
-    {
-      "name": "helper",
-      "description": "Assists users",
-      "instructions": [{"content": "Instructions..."}],
-      "toolsets": ["tools-as-needed"]
-    }
-  ]
-}
+### Customer Support Team
+
+```yaml
+version: "1"
+id: support-team
+name: Customer Support
+description: Routes support tickets to technical, billing, or account specialists
+interactive: true
+default_agent: coordinator
+
+agents:
+  coordinator:
+    name: Support Coordinator
+    description: Routes tickets to specialists
+    instructions:
+      - |
+          Analyze the inquiry and delegate:
+          - Bugs, errors, technical issues → technical_support
+          - Payments, invoices, billing → billing_support
+          - Login, settings, security → account_support
+    sub_agents:
+      - technical_support
+      - billing_support
+      - account_support
+  
+  technical_support:
+    name: Technical Support
+    description: Handles technical issues
+    instructions:
+      - |
+          Provide technical assistance:
+          - Diagnose problems systematically
+          - Offer step-by-step solutions
+          - Link to relevant documentation
+          - Escalate complex issues to engineering
+    toolsets:
+      - memory-server
+  
+  billing_support:
+    name: Billing Support
+    description: Handles billing inquiries
+    instructions:
+      - |
+          Address billing questions:
+          - Explain charges and invoices
+          - Process refund requests
+          - Update payment methods
+          - Resolve billing disputes
+    toolsets:
+      - memory-server
+  
+  account_support:
+    name: Account Support
+    description: Handles account management
+    instructions:
+      - |
+          Assist with account issues:
+          - Reset passwords
+          - Update profile information
+          - Configure security settings
+          - Delete or deactivate accounts
+    toolsets:
+      - memory-server
 ```
 
-### Pattern 3: Workflow Orchestrator
+### Research & Writing Team
 
-```json
-{
-  "id": "workflow-agent",
-  "name": "Workflow Agent",
-  "description": "Coordinates multi-step workflow",
-  "interactive": true,
-  "agents": [
-    {
-      "name": "coordinator",
-      "description": "Orchestrates workflow",
-      "instructions": [{"content": "Coordination logic..."}],
-      "subAgents": ["step1", "step2", "step3"]
-    },
-    {
-      "name": "step1",
-      "description": "First step",
-      "instructions": [{"content": "Step 1 instructions..."}]
-    },
-    {
-      "name": "step2",
-      "description": "Second step",
-      "instructions": [{"content": "Step 2 instructions..."}]
-    },
-    {
-      "name": "step3",
-      "description": "Third step",
-      "instructions": [{"content": "Step 3 instructions..."}]
-    }
-  ]
-}
+```yaml
+version: "1"
+id: research-writing-team
+name: Research & Writing Team
+description: Conducts research and creates comprehensive written content
+interactive: true
+default_agent: coordinator
+
+agents:
+  coordinator:
+    name: Project Coordinator
+    description: Manages research and writing workflow
+    instructions:
+      - |
+          Coordinate content creation:
+          1. Route research requests to researcher
+          2. Route writing requests to writer with research
+          3. Route editing requests to editor
+          
+          Ensure quality throughout pipeline.
+    sub_agents:
+      - researcher
+      - writer
+      - editor
+  
+  researcher:
+    name: Researcher
+    description: Conducts thorough research
+    model: anthropic
+    instructions:
+      - |
+          Research the topic comprehensively:
+          - Find authoritative sources
+          - Gather key facts and statistics
+          - Identify different perspectives
+          - Note conflicting information
+          
+          Provide organized research brief.
+    toolsets:
+      - duckduckgo
+      - memory-server
+  
+  writer:
+    name: Content Writer
+    description: Creates written content
+    model: anthropic
+    instructions:
+      - |
+          Write engaging content based on research:
+          - Clear, compelling introduction
+          - Well-structured body with subheadings
+          - Evidence-based arguments
+          - Strong conclusion
+          
+          Tone: Professional yet accessible
+          Length: 1000-1500 words
+  
+  editor:
+    name: Editor
+    description: Polishes content
+    model: anthropic
+    instructions:
+      - |
+          Edit for excellence:
+          - Fix grammar and spelling
+          - Improve clarity and flow
+          - Strengthen arguments
+          - Ensure consistency
+          
+          Maintain author's voice while elevating quality.
 ```
 
-## Troubleshooting
+### Data Analysis Team
 
-### Common Errors
+```yaml
+version: "1"
+id: analytics-team
+name: Analytics Team
+description: Analyzes data and generates insights with visualizations
+default_agent: analyzer
 
-**"Missing required field: id"**
-- Ensure all required properties are present
-- Check for typos in property names
+agents:
+  analyzer:
+    type: sequence
+    name: Analysis Pipeline
+    description: Complete analysis workflow
+    instructions:
+      - |
+          Process data through pipeline:
+          1. Validate and clean data
+          2. Perform statistical analysis
+          3. Generate summary report
+    sub_agents:
+      - data_validator
+      - statistician
+      - report_writer
+  
+  data_validator:
+    name: Data Validator
+    description: Validates and cleans data
+    instructions:
+      - |
+          Validate the dataset:
+          - Check for missing values
+          - Identify outliers
+          - Verify data types
+          - Remove duplicates
+          
+          Report data quality issues.
+  
+  statistician:
+    name: Statistician
+    description: Performs statistical analysis
+    model: gpt-4o
+    instructions:
+      - |
+          Analyze the data:
+          - Calculate descriptive statistics
+          - Identify trends and patterns
+          - Test hypotheses
+          - Determine correlations
+          
+          Provide clear, actionable insights.
+  
+  report_writer:
+    name: Report Writer
+    description: Creates analysis reports
+    model: anthropic
+    instructions:
+      - |
+          Generate comprehensive report:
+          - Executive summary
+          - Key findings
+          - Detailed analysis
+          - Recommendations
+          - Methodology notes
+          
+          Use clear visualizations and charts.
+```
 
-**"interactive must be boolean"**
-- Use `true` or `false`, not `"true"` or `"false"`
-- Or omit the property entirely (defaults to false)
+## Best Practices
 
-**"Setting type mismatch"**
-- Ensure `defaultValue` matches the `type`
-- Boolean setting needs boolean default
-- String setting needs string default
+### Team Design
 
-**"Invalid conditional expression"**
-- Use format: `setting.<name> == <value>`
-- String values need escaped quotes: `"setting.mode == \"value\""`
-- Boolean values don't need quotes: `setting.enabled == true`
+1. **Single Responsibility**: Each team should have a clear, focused purpose
+2. **Clear Boundaries**: Define what the team does and doesn't handle
+3. **Appropriate Scope**: Not too broad, not too narrow
+4. **User-Focused**: Design around user needs, not implementation details
 
-**"Unknown toolset"**
-- Verify toolset name spelling (case-sensitive)
-- Check toolset is registered in system
-- See [Available Tools](../tools/available-tools.md)
+### Agent Design
 
-### Getting Help
+1. **Specialized Roles**: Each agent should have specific expertise
+2. **Clear Instructions**: Detailed, actionable behavioral guidelines
+3. **Appropriate Tools**: Only tools the agent actually needs
+4. **Delegation Logic**: When and why to delegate to other agents
 
-1. **Validate JSON** - Use online JSON validator
-2. **Check examples** - Compare to working agent examples
-3. **Review logs** - Server logs show specific validation errors
-4. **Check documentation** - Review relevant sections
-5. **Contact support** - Reach out to your administrator
+### Configuration
+
+1. **Descriptive Names**: Use clear, consistent naming
+2. **Helpful Descriptions**: Aid routing and user understanding
+3. **Sensible Defaults**: Settings should work well out-of-the-box
+4. **Validation**: Test thoroughly before deployment
+
+### Maintenance
+
+1. **Version Control**: Track all changes
+2. **Documentation**: Explain team purpose and capabilities
+3. **Monitoring**: Track usage and performance
+4. **Iteration**: Refine based on user feedback
 
 ## Next Steps
 
 - **[Configuration Reference](configuration.md)** - Complete schema documentation
-- **[Examples](examples.md)** - More real-world examples
-- **[Settings Guide](../advanced/settings.md)** - Master settings and conditionals
+- **[Agent Types](agent-types.md)** - LLM, Parallel, Loop, Sequence details
+- **[Examples](examples.md)** - More real-world templates
 - **[Tools](../tools/overview.md)** - Learn about available tools
+- **[Advanced Patterns](../advanced/multi-agent.md)** - Complex workflows
 
 ---
 
 **Related:**  
-[Agent Overview](overview.md) | [Examples](examples.md) | [Multi-Persona Workflows](../advanced/multi-persona.md)
-
+[Overview](overview.md) | [Agent Types](agent-types.md) | [Configuration](configuration.md)

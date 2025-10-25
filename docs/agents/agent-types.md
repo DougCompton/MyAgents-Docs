@@ -1,592 +1,843 @@
-# Agent Execution Types
+# Agent Types
 
-MyAgents supports four powerful agent execution types for different workflow patterns.
+MyAgents supports four execution types that enable different processing patterns for your AI teams.
 
 ## Overview
 
-| Type | Purpose | Use Case |
-|------|---------|----------|
-| [LLM](#llm-agent) | Interactive AI assistant | Chat, analysis, content creation |
-| [Parallel](#parallel-agent) | Concurrent execution | Multi-perspective analysis, parallel research |
-| [Loop](#loop-agent) | Iterative refinement | Content improvement, retry logic |
-| [Sequence](#sequence-agent) | Sequential pipeline | ETL workflows, multi-stage processing |
+| Type | Purpose | Use Cases |
+|------|---------|-----------|
+| **LLM Agent** | Interactive AI assistant | Conversations, analysis, content creation |
+| **Parallel Agent** | Concurrent execution | Multi-perspective analysis, batch processing |
+| **Loop Agent** | Iterative refinement | Content improvement, problem solving |
+| **Sequence Agent** | Sequential pipeline | Multi-stage workflows, progressive processing |
 
 ## LLM Agent
 
-The standard interactive AI agent with LLM capabilities.
+The **LLM Agent** is the default agent type - a standard interactive AI assistant powered by large language models.
 
-### Structure
+### Characteristics
 
-```json
-{
-  "type": "llm",
-  "name": "Assistant",
-  "description": "General purpose assistant",
-  "instructions": [
-    {"content": "You are a helpful assistant..."}
-  ],
-  "model": "anthropic",
-  "toolsets": ["duckduckgo"]
-}
+- ✅ Interactive conversations with context
+- ✅ Access to tools and external systems
+- ✅ Can delegate to other agents
+- ✅ Full instruction customization
+- ✅ Streaming responses
+
+### Configuration
+
+```yaml
+agents:
+  assistant:
+    type: llm  # Can be omitted (default)
+    name: Research Assistant
+    description: Conducts web research and analysis
+    model: anthropic
+    instructions:
+      - |
+        You are a research assistant. Conduct thorough web research 
+          using available tools. Provide well-sourced, accurate information 
+          with citations.
+    toolsets:
+      - duckduckgo
+      - memory-server
 ```
 
-### Properties
+### Key Properties
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `type` | string | No | "llm" (default if omitted) |
-| `name` | string | Yes | Agent identifier |
-| `description` | string | Yes | Agent purpose |
-| `instructions` | array | Yes | Behavior instructions |
-| `model` | string | No | LLM provider |
-| `toolsets` | array | No | Available tools |
-| `subAgents` | array | No | Delegatable agents |
+| Property | Required | Description |
+|----------|----------|-------------|
+| `type` | No | Set to `"llm"` or omit (default) |
+| `name` | Yes | Agent display name |
+| `description` | Yes | Brief role description |
+| `model` | No | LLM provider: `"anthropic"` or `"gpt-4o"` |
+| `instructions` | Yes | Behavioral guidelines |
+| `toolsets` | No | Available tool access |
+| `sub_agents` | No | Agents this can delegate to |
 
-### Features
+### Use Cases
 
-- ✅ **Interactive conversations** - Maintains context across messages
-- ✅ **Tool integration** - Access to MCP tools
-- ✅ **Streaming support** - Real-time response streaming
-- ✅ **Conditional instructions** - Dynamic behavior based on settings
-- ✅ **Sub-agent delegation** - Can delegate via `transfer_task`
-
-### When to Use
-
-- Chat interfaces
-- Content generation
-- Data analysis
-- Q&A systems
-- Task automation
-
----
-
-## Parallel Agent
-
-Executes multiple sub-agents concurrently for parallel processing.
-
-### Structure
-
-```json
-{
-  "type": "parallel",
-  "name": "Research Team",
-  "description": "Multi-perspective analysis",
-  "sub_agents": ["analyst1", "analyst2", "analyst3"],
-  "max_concurrency": 2
-}
+**Content Creation**
+```yaml
+content_writer:
+  type: llm
+  name: Content Writer
+  description: Creates blog posts and articles
+  model: anthropic
+  instructions:
+    - |
+      Create engaging, SEO-optimized content. Use clear structure 
+        with headings, bullet points, and examples. Target 1000-1500 words.
+  toolsets:
+    - duckduckgo
 ```
 
-### Properties
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `type` | string | Yes | "parallel" |
-| `name` | string | Yes | Agent identifier |
-| `description` | string | Yes | Agent purpose |
-| `sub_agents` | array | Yes | List of agents to run in parallel |
-| `max_concurrency` | number | No | Max parallel executions (default: all) |
-
-### Behavior
-
-**Input:** Single string sent to all sub-agents simultaneously
-
-**Processing:**
-- All sub-agents receive the same input
-- Execute concurrently (respecting `max_concurrency`)
-- Continue on partial failures
-
-**Output:** JSON array of results:
-```json
-[
-  "Result from analyst1",
-  "Result from analyst2",
-  "Result from analyst3"
-]
+**Customer Support**
+```yaml
+support_agent:
+  type: llm
+  name: Support Agent
+  description: Handles customer inquiries
+  instructions:
+    - |
+      Provide friendly, helpful support. Check knowledge base first,  then escalate complex issues to technical team.
+  sub_agents:
+    - technical_specialist
+  toolsets:
+    - memory-server
 ```
 
-### Example: Multi-Perspective Research
-
-```json
-{
-  "version": "1",
-  "id": "parallel-research",
-  "name": "Parallel Research Team",
-  "description": "Analyzes topics from multiple perspectives simultaneously",
-  "default_agent": "coordinator",
-  "agents": {
-    "coordinator": {
-      "type": "parallel",
-      "name": "Research Coordinator",
-      "description": "Coordinates parallel research",
-      "sub_agents": [
-        "technical_researcher",
-        "business_researcher",
-        "academic_researcher"
-      ],
-      "max_concurrency": 3
-    },
-    "technical_researcher": {
-      "type": "llm",
-      "name": "Technical Researcher",
-      "description": "Technical analysis",
-      "instructions": [
-        {
-          "": "Analyze from technical perspective: architecture, performance, security"
-        }
-      ]
-    },
-    "business_researcher": {
-      "type": "llm",
-      "name": "Business Researcher",
-      "description": "Business analysis",
-      "instructions": [
-        {
-          "": "Analyze from business perspective: market, ROI, strategy"
-        }
-      ]
-    },
-    "academic_researcher": {
-      "type": "llm",
-      "name": "Academic Researcher",
-      "description": "Academic analysis",
-      "instructions": [
-        {
-          "": "Analyze from academic perspective: theory, research, citations"
-        }
-      ]
-    }
-  }
-}
+**Data Analysis**
+```yaml
+analyst:
+  type: llm
+  name: Data Analyst
+  description: Analyzes datasets and generates insights
+  model: gpt-4o
+  instructions:
+    - |
+      Analyze provided data thoroughly. Identify trends, anomalies, 
+        and actionable insights. Present findings with visualizations.
 ```
-
-**User Input:** "Analyze the impact of AI on healthcare"
-
-**Execution:**
-```
-Input sent to all 3 researchers simultaneously:
-├─→ Technical Researcher (concurrent)
-├─→ Business Researcher (concurrent)
-└─→ Academic Researcher (concurrent)
-
-Results combined:
-[
-  "Technical: AI enables...",
-  "Business: Market opportunity...",
-  "Academic: Research shows..."
-]
-```
-
-### When to Use
-
-- **Multi-perspective analysis** - Get different viewpoints on same input
-- **Parallel research** - Multiple specialists work simultaneously
-- **A/B testing** - Compare different approaches
-- **Consensus building** - Gather multiple opinions
-- **Distributed processing** - Split workload across agents
-
-### Performance Considerations
-
-**Concurrency Control:**
-```json
-{
-  "max_concurrency": 2  // Limit to 2 simultaneous executions
-}
-```
-
-Without limit, all sub-agents run simultaneously (fastest but more resource-intensive).
-
-**Error Handling:**
-- Partial failures logged but don't stop other agents
-- Successful results returned even if some agents fail
-- Check logs for detailed error information
-
----
-
-## Loop Agent
-
-Iteratively executes a sub-agent for refinement or retry logic.
-
-### Structure
-
-```json
-{
-  "type": "loop",
-  "name": "Refiner",
-  "description": "Iteratively improves content",
-  "sub_agent": "editor",
-  "loop": {
-    "mode": "fixed",
-    "max_iterations": 3,
-    "exit_on_error": true
-  }
-}
-```
-
-### Properties
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `type` | string | Yes | "loop" |
-| `name` | string | Yes | Agent identifier |
-| `description` | string | Yes | Agent purpose |
-| `sub_agent` | string | Yes | Agent to execute repeatedly |
-| `loop` | object | Yes | Loop configuration |
-
-### Loop Configuration
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `mode` | string | Yes | "fixed" or "until_success" |
-| `max_iterations` | number | Yes | Maximum iterations (1-100) |
-| `success_criteria` | array | No | Success check conditions |
-| `exit_on_error` | boolean | No | Stop on error (default: true) |
-
-### Modes
-
-#### Fixed Mode
-
-Run exact number of iterations regardless of results.
-
-```json
-{
-  "mode": "fixed",
-  "max_iterations": 3
-}
-```
-
-**Execution:**
-```
-Iteration 1: Input → Agent → Output 1
-Iteration 2: Output 1 → Agent → Output 2
-Iteration 3: Output 2 → Agent → Final Output
-```
-
-Each iteration's output becomes next iteration's input.
-
-#### Until Success Mode
-
-Run until success criteria met or max iterations reached.
-
-```json
-{
-  "mode": "until_success",
-  "max_iterations": 5,
-  "success_criteria": ["approved", "complete", "valid"]
-}
-```
-
-**Execution:**
-- Checks if output contains any success criteria keywords
-- Stops early if criteria met
-- Otherwise continues to max iterations
-
-### Example: Iterative Content Refinement
-
-```json
-{
-  "version": "1",
-  "id": "loop-refine",
-  "name": "Iterative Refinement Agent",
-  "description": "Iteratively refines content through multiple passes",
-  "default_agent": "refiner",
-  "agents": {
-    "refiner": {
-      "type": "loop",
-      "name": "Content Refiner",
-      "description": "Iteratively refines content",
-      "sub_agent": "editor",
-      "loop": {
-        "mode": "fixed",
-        "max_iterations": 3,
-        "exit_on_error": true
-      }
-    },
-    "editor": {
-      "type": "llm",
-      "name": "Content Editor",
-      "description": "Edits and improves content",
-      "instructions": [
-        {
-          "": "Improve the text by:\n1. Fix grammar\n2. Improve clarity\n3. Enhance structure\n4. Make more concise\n5. Strengthen arguments\n\nProvide improved version."
-        }
-      ]
-    }
-  }
-}
-```
-
-**User Input:** "This text needs improvement. It has errors and is unclear..."
-
-**Execution:**
-```
-Pass 1: Original text → Editor → Improved v1
-Pass 2: Improved v1 → Editor → Improved v2
-Pass 3: Improved v2 → Editor → Final polished text
-```
-
-Each pass progressively refines the content.
-
-### When to Use
-
-- **Content refinement** - Progressive improvement through iterations
-- **Retry logic** - Retry operations until success
-- **Quality improvement** - Iteratively enhance outputs
-- **Progressive processing** - Build up complexity through passes
-- **Validation loops** - Retry until criteria met
 
 ### Best Practices
 
-**Set reasonable iteration limits:**
-```json
-{
-  "max_iterations": 3  // ✓ Good for refinement
-}
+1. **Clear Instructions**: Define scope, constraints, and output format
+2. **Appropriate Tools**: Only include tools the agent needs
+3. **Model Selection**: Use Claude for analysis/writing, GPT-4 for general tasks
+4. **Sub-Agent Design**: Structure delegations hierarchically
+
+## Parallel Agent
+
+The **Parallel Agent** executes multiple sub-agents concurrently and combines their results.
+
+### Characteristics
+
+- ✅ Concurrent execution of sub-agents
+- ✅ Results combined automatically
+- ✅ Ideal for multi-perspective analysis
+- ✅ Reduces total processing time
+- ⚠️ Does not support tools directly
+- ⚠️ Cannot be interactive
+
+### Configuration
+
+```yaml
+agents:
+  multi_perspective_analyzer:
+    type: parallel
+    name: Multi-Perspective Analyzer
+    description: Analyzes content from multiple viewpoints simultaneously
+    instructions:
+      - |
+          Combine insights from all perspectives into a comprehensive analysis. 
+          Identify agreements, contradictions, and unique insights from each viewpoint.
+    sub_agents:
+      - technical_perspective
+      - business_perspective
+      - user_perspective
+  
+  technical_perspective:
+    type: llm
+    name: Technical Perspective
+    description: Technical feasibility analysis
+    instructions:
+      - |
+          Analyze from a technical standpoint: implementation complexity, 
+          scalability, maintainability, and technical risks.
+  
+  business_perspective:
+    type: llm
+    name: Business Perspective
+    description: Business value analysis
+    instructions:
+      - |
+          Analyze from a business standpoint: ROI, market opportunity, 
+          competitive advantage, and resource requirements.
+  
+  user_perspective:
+    type: llm
+    name: User Perspective
+    description: User experience analysis
+    instructions:
+      - |
+          Analyze from a user standpoint: usability, accessibility, 
+          user value, and adoption barriers.
 ```
 
-```json
-{
-  "max_iterations": 100  // ✗ Too many, may be inefficient
-}
+### Key Properties
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `type` | Yes | Must be `"parallel"` |
+| `name` | Yes | Agent display name |
+| `description` | Yes | Brief role description |
+| `instructions` | Yes | How to combine sub-agent results |
+| `sub_agents` | Yes | Array of agents to execute concurrently |
+| `toolsets` | No | ⚠️ Not supported for parallel agents |
+
+### Execution Flow
+
+```
+User Request
+     │
+     ▼
+Parallel Agent
+     │
+     ├─────────┬─────────┬─────────┐
+     ▼         ▼         ▼         ▼
+Sub-Agent 1  Sub-Agent 2  Sub-Agent 3  Sub-Agent 4
+     │         │         │         │
+     │    (Execute Concurrently)  │
+     │         │         │         │
+     └─────────┴─────────┴─────────┘
+              │
+              ▼
+      Combine Results
+              │
+              ▼
+         Final Response
 ```
 
-**Use exit_on_error for robustness:**
-```json
-{
-  "exit_on_error": true  // Stop if agent fails
-}
+### Use Cases
+
+**Product Review Analysis**
+```yaml
+product_reviewer:
+  type: parallel
+  name: Product Review Team
+  description: Multi-dimensional product analysis
+  instructions:
+    - |
+        Synthesize all perspectives into a balanced review with:
+        - Overall recommendation
+        - Key strengths and weaknesses
+        - Best use cases
+        - Alternative considerations
+  sub_agents:
+    - features_analyst
+    - price_analyst
+    - quality_analyst
+    - support_analyst
 ```
 
----
+**Content Fact-Checking**
+```yaml
+fact_checker:
+  type: parallel
+  name: Fact Checking Team
+  description: Verifies claims from multiple sources
+  instructions:
+    - |
+        Cross-reference all findings. Report verification status for each claim:
+        - Confirmed (multiple sources agree)
+        - Disputed (sources conflict)
+        - Unverified (insufficient information)
+  sub_agents:
+    - source_checker_1
+    - source_checker_2
+    - source_checker_3
+```
+
+**Competitive Analysis**
+```yaml
+competitor_analyzer:
+  type: parallel
+  name: Competitive Analysis Team
+  description: Analyzes multiple competitors simultaneously
+  instructions:
+    - |
+        Create a competitive landscape summary:
+        - Feature comparison matrix
+        - Pricing positioning
+        - Market differentiation
+        - Strategic recommendations
+  sub_agents:
+    - competitor_a_analyst
+    - competitor_b_analyst
+    - competitor_c_analyst
+```
+
+### Best Practices
+
+1. **Independent Sub-Agents**: Each sub-agent should work independently
+2. **Clear Synthesis**: Main agent combines results coherently
+3. **Balanced Load**: Sub-agents should have similar complexity
+4. **Error Handling**: One sub-agent failure doesn't block others
+
+### Limitations
+
+- ❌ Cannot use `toolsets` directly (sub-agents can have tools)
+- ❌ Cannot be set as `interactive: true`
+- ❌ Sub-agents cannot communicate with each other during execution
+
+## Loop Agent
+
+The **Loop Agent** executes an agent iteratively to refine or improve content.
+
+### Characteristics
+
+- ✅ Iterative refinement and improvement
+- ✅ Each iteration builds on previous results
+- ✅ Configurable iteration count
+- ✅ Automatic convergence
+- ⚠️ Requires exactly one sub-agent
+- ⚠️ Cannot use tools directly
+
+### Configuration
+
+```yaml
+agents:
+  content_refiner:
+    type: loop
+    name: Content Refiner
+    description: Iteratively improves content quality
+    max_iterations: 3
+    instructions:
+      - |
+          Review the content from the previous iteration and:
+          1. Identify areas for improvement
+          2. Enhance clarity and readability
+          3. Strengthen arguments
+          4. Polish language and style
+          
+          On the final iteration, provide the polished final version.
+    sub_agents:
+      - content_editor
+  
+  content_editor:
+    type: llm
+    name: Content Editor
+    description: Edits and refines content
+    instructions:
+      - |
+          Edit the provided content for:
+          - Grammar and spelling
+          - Clarity and conciseness
+          - Flow and structure
+          - Impact and engagement
+```
+
+### Key Properties
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `type` | Yes | Must be `"loop"` |
+| `name` | Yes | Agent display name |
+| `description` | Yes | Brief role description |
+| `instructions` | Yes | What to do each iteration |
+| `max_iterations` | Yes | Number of iterations (1-10) |
+| `sub_agents` | Yes | Array with exactly one agent |
+| `toolsets` | No | ⚠️ Not supported for loop agents |
+
+### Execution Flow
+
+```
+User Request + Initial Content
+         │
+         ▼
+    Iteration 1
+         │
+    [Sub-Agent]
+         │
+         ▼
+    Iteration 2
+         │
+    [Sub-Agent] (receives previous output)
+         │
+         ▼
+    Iteration 3
+         │
+    [Sub-Agent] (receives previous output)
+         │
+         ▼
+   Final Result
+```
+
+### Use Cases
+
+**Content Polish Loop**
+```yaml
+polish_loop:
+  type: loop
+  name: Content Polish Loop
+  description: Progressively polishes content to perfection
+  max_iterations: 3
+  instructions:
+    - |
+        Iteration by iteration, improve:
+        1. First pass: Structure and organization
+        2. Second pass: Language and clarity
+        3. Final pass: Style and impact
+  sub_agents:
+    - polisher
+
+polisher:
+  type: llm
+  name: Content Polisher
+  model: anthropic
+  instructions:
+    - |
+        Improve the content while maintaining the core message.
+        Focus on readability, engagement, and professionalism.
+```
+
+**Code Review Loop**
+```yaml
+code_reviewer:
+  type: loop
+  name: Code Review Loop
+  description: Iteratively reviews and improves code
+  max_iterations: 2
+  instructions:
+    - |
+        Each iteration:
+        1. Identify code smells and issues
+        2. Suggest specific improvements
+        3. Check against best practices
+  sub_agents:
+    - code_analyst
+
+code_analyst:
+  type: llm
+  name: Code Analyst
+  instructions:
+    - |
+        Analyze code for:
+        - Correctness and bugs
+        - Performance issues
+        - Security vulnerabilities
+        - Maintainability concerns
+```
+
+**Problem Solving Loop**
+```yaml
+problem_solver:
+  type: loop
+  name: Problem Solving Loop
+  description: Iteratively refines solutions
+  max_iterations: 3
+  instructions:
+    - |
+        Each iteration:
+        1. Analyze the current solution
+        2. Identify weaknesses or gaps
+        3. Refine and enhance the approach
+  sub_agents:
+    - solution_refiner
+
+solution_refiner:
+  type: llm
+  name: Solution Refiner
+  model: gpt-4o
+  instructions:
+    - |
+        Evaluate the solution critically and suggest improvements.
+        Consider edge cases, efficiency, and robustness.
+```
+
+### Best Practices
+
+1. **Reasonable Iterations**: 2-4 iterations typically sufficient
+2. **Clear Progress**: Each iteration should meaningfully improve
+3. **Convergence**: Instructions should guide toward refinement, not reimagining
+4. **Final Polish**: Last iteration should produce final deliverable
+
+### Limitations
+
+- ❌ Cannot use `toolsets` directly (sub-agent can have tools)
+- ❌ Must have exactly one sub-agent
+- ❌ `max_iterations` must be between 1 and 10
+- ⚠️ Cost increases linearly with iterations
 
 ## Sequence Agent
 
-Executes sub-agents sequentially in a pipeline, passing output to next input.
+The **Sequence Agent** processes content through a defined sequential pipeline.
 
-### Structure
+### Characteristics
 
-```json
-{
-  "type": "sequence",
-  "name": "Pipeline",
-  "description": "Sequential processing pipeline",
-  "sub_agents": ["stage1", "stage2", "stage3"]
-}
+- ✅ Sequential, ordered processing
+- ✅ Each agent receives previous agent's output
+- ✅ Clear workflow stages
+- ✅ Specialized agents for each stage
+- ⚠️ Cannot use tools directly
+- ⚠️ Cannot be interactive
+
+### Configuration
+
+```yaml
+agents:
+  content_pipeline:
+    type: sequence
+    name: Content Creation Pipeline
+    description: Research, write, and edit content sequentially
+    instructions:
+      - |
+          Coordinate the content creation workflow:
+          1. Research phase gathers information
+          2. Writing phase creates draft
+          3. Editing phase polishes final version
+          
+          Ensure each phase builds effectively on the previous.
+    sub_agents:
+      - researcher
+      - writer
+      - editor
+  
+  researcher:
+    type: llm
+    name: Researcher
+    description: Gathers information and sources
+    instructions:
+      - |
+          Research the topic thoroughly. Provide:
+          - Key facts and statistics
+          - Important concepts
+          - Relevant sources
+          - Suggested angles
+    toolsets:
+      - duckduckgo
+  
+  writer:
+    type: llm
+    name: Writer
+    description: Creates content from research
+    instructions:
+      - |
+          Using the research provided, write a comprehensive article.
+          Create engaging content with clear structure and flow.
+  
+  editor:
+    type: llm
+    name: Editor
+    description: Polishes and finalizes content
+    instructions:
+      - |
+          Review and polish the draft. Ensure:
+          - Grammar and spelling are perfect
+          - Flow is smooth
+          - Message is clear and impactful
+          - Length is appropriate
 ```
 
-### Properties
+### Key Properties
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `type` | string | Yes | "sequence" |
-| `name` | string | Yes | Agent identifier |
-| `description` | string | Yes | Agent purpose |
-| `sub_agents` | array | Yes | Agents to run in order |
+| Property | Required | Description |
+|----------|----------|-------------|
+| `type` | Yes | Must be `"sequence"` |
+| `name` | Yes | Agent display name |
+| `description` | Yes | Brief role description |
+| `instructions` | Yes | Overall workflow coordination |
+| `sub_agents` | Yes | Array of agents in execution order |
+| `toolsets` | No | ⚠️ Not supported for sequence agents |
 
-### Behavior
+### Execution Flow
 
-**Input:** Initial string sent to first agent
-
-**Processing:**
-- Agent 1 processes input → Output 1
-- Agent 2 receives Output 1 → Output 2
-- Agent 3 receives Output 2 → Final Output
-
-**Output:** Output from final agent in sequence
-
-**Error Handling:** Fails fast on first error with detailed context
-
-### Example: ETL Pipeline
-
-```json
-{
-  "version": "1",
-  "id": "sequence-pipeline",
-  "name": "Content Processing Pipeline",
-  "description": "Sequential pipeline for extraction, analysis, formatting",
-  "default_agent": "pipeline",
-  "agents": {
-    "pipeline": {
-      "type": "sequence",
-      "name": "Content Pipeline",
-      "description": "Processes content through stages",
-      "sub_agents": ["extractor", "analyzer", "formatter"]
-    },
-    "extractor": {
-      "type": "llm",
-      "name": "Information Extractor",
-      "description": "Extracts key information",
-      "instructions": [
-        {
-          "": "Extract key information:\n- Main topics\n- Facts and data\n- Arguments\n- Evidence\n- Conclusions\n\nOutput structured format."
-        }
-      ]
-    },
-    "analyzer": {
-      "type": "llm",
-      "name": "Content Analyzer",
-      "description": "Analyzes extracted information",
-      "instructions": [
-        {
-          "": "Analyze the extracted information:\n- Identify patterns\n- Assess strengths/weaknesses\n- Note gaps\n- Provide insights\n- Suggest implications"
-        }
-      ]
-    },
-    "formatter": {
-      "type": "llm",
-      "name": "Report Formatter",
-      "description": "Formats into professional report",
-      "instructions": [
-        {
-          "": "Format into professional report:\n- Executive summary\n- Clear headings\n- Markdown formatting\n- Lists\n- Conclusion"
-        }
-      ]
-    }
-  }
-}
+```
+User Request
+     │
+     ▼
+Agent 1 (Research)
+     │
+     ▼
+Agent 2 (Write) ← receives Agent 1 output
+     │
+     ▼
+Agent 3 (Edit) ← receives Agent 2 output
+     │
+     ▼
+Final Result
 ```
 
-**User Input:** "Here is raw customer feedback data..."
+### Use Cases
 
-**Execution:**
-```
-Step 1 (Extract): Raw data → Extractor → Structured bullet points
-Step 2 (Analyze): Bullet points → Analyzer → Insights and patterns
-Step 3 (Format): Insights → Formatter → Professional report
-```
-
-Each stage transforms the output for the next stage.
-
-### When to Use
-
-- **ETL workflows** - Extract, Transform, Load pipelines
-- **Multi-stage processing** - Progressive transformations
-- **Content pipelines** - Research → Write → Edit
-- **Data transformations** - Parse → Analyze → Format
-- **Quality gates** - Validate → Process → Verify
-
-### Common Patterns
-
-**Research Pipeline:**
-```json
-{
-  "sub_agents": ["researcher", "writer", "editor"]
-}
+**Blog Post Production**
+```yaml
+blog_production:
+  type: sequence
+  name: Blog Production Pipeline
+  description: Complete blog post creation workflow
+  instructions:
+    - |
+        Create a publication-ready blog post through:
+        1. Topic research and outline
+        2. Draft creation
+        3. SEO optimization
+        4. Final editing
+  sub_agents:
+    - research_phase
+    - draft_phase
+    - seo_phase
+    - editing_phase
 ```
 
-**Data Processing:**
-```json
-{
-  "sub_agents": ["validator", "transformer", "summarizer"]
-}
+**Report Generation**
+```yaml
+report_generator:
+  type: sequence
+  name: Report Generator
+  description: Generates comprehensive business reports
+  instructions:
+    - |
+        Generate a professional report:
+        1. Collect and validate data
+        2. Perform analysis
+        3. Create visualizations
+        4. Write executive summary
+  sub_agents:
+    - data_collector
+    - data_analyst
+    - visualization_creator
+    - summary_writer
 ```
 
-**Quality Pipeline:**
-```json
-{
-  "sub_agents": ["generator", "reviewer", "approver"]
-}
+**Document Translation Pipeline**
+```yaml
+translation_pipeline:
+  type: sequence
+  name: Translation Pipeline
+  description: Translates and localizes documents
+  instructions:
+    - |
+        Complete translation workflow:
+        1. Analyze source document
+        2. Translate content
+        3. Localize cultural references
+        4. Quality review
+  sub_agents:
+    - source_analyzer
+    - translator
+    - localizer
+    - qa_reviewer
 ```
 
----
-
-## Composability
-
-Agent types can be nested and combined for powerful workflows.
-
-### Parallel + LLM
-
-```json
-{
-  "coordinator": {
-    "type": "parallel",
-    "sub_agents": ["llm1", "llm2", "llm3"]
-  }
-}
+**Customer Onboarding**
+```yaml
+onboarding_flow:
+  type: sequence
+  name: Customer Onboarding Flow
+  description: Guides new customers through setup
+  instructions:
+    - |
+        Onboard customers step-by-step:
+        1. Collect requirements
+        2. Configure account
+        3. Setup integrations
+        4. Provide training
+  sub_agents:
+    - requirements_collector
+    - account_configurator
+    - integration_specialist
+    - trainer
 ```
 
-### Sequence + Parallel
+### Best Practices
 
-```json
-{
-  "pipeline": {
-    "type": "sequence",
-    "sub_agents": ["collector", "parallel_analyzer", "synthesizer"]
-  },
-  "parallel_analyzer": {
-    "type": "parallel",
-    "sub_agents": ["analyst1", "analyst2"]
-  }
-}
+1. **Logical Order**: Arrange sub-agents in natural workflow sequence
+2. **Clear Handoffs**: Each agent should produce output suitable for next agent
+3. **Specialization**: Each stage agent should be focused and specialized
+4. **Error Recovery**: Early stages should validate inputs thoroughly
+
+### Limitations
+
+- ❌ Cannot use `toolsets` directly (sub-agents can have tools)
+- ❌ Cannot be set as `interactive: true`
+- ❌ Execution is strictly sequential (no parallelism)
+- ⚠️ Failure in one stage blocks subsequent stages
+
+## Choosing the Right Type
+
+### Decision Tree
+
+```
+Need real-time interaction?
+├─ YES → LLM Agent
+└─ NO → Need processing pattern?
+         ├─ Multiple concurrent perspectives → Parallel Agent
+         ├─ Iterative refinement → Loop Agent
+         ├─ Sequential pipeline → Sequence Agent
+         └─ Single-step processing → LLM Agent
 ```
 
-### Loop + Sequence
+### Comparison Matrix
 
-```json
-{
-  "refiner": {
-    "type": "loop",
-    "sub_agent": "improvement_pipeline",
-    "loop": {"mode": "fixed", "max_iterations": 3}
-  },
-  "improvement_pipeline": {
-    "type": "sequence",
-    "sub_agents": ["grammar_check", "style_enhance"]
-  }
-}
+| Requirement | LLM | Parallel | Loop | Sequence |
+|-------------|-----|----------|------|----------|
+| Interactive conversations | ✅ | ❌ | ❌ | ❌ |
+| Direct tool access | ✅ | ❌ | ❌ | ❌ |
+| Sub-agent delegation | ✅ | ✅ | ✅ | ✅ |
+| Concurrent execution | ❌ | ✅ | ❌ | ❌ |
+| Iterative refinement | ❌ | ❌ | ✅ | ❌ |
+| Sequential workflow | ❌ | ❌ | ❌ | ✅ |
+| Result combination | N/A | Auto | Iterative | Sequential |
+
+### Use Case Mapping
+
+| Scenario | Recommended Type | Why |
+|----------|------------------|-----|
+| Customer chat support | LLM Agent | Interactive, needs tools |
+| Multi-expert analysis | Parallel Agent | Concurrent perspectives |
+| Content refinement | Loop Agent | Iterative improvement |
+| Content production | Sequence Agent | Sequential stages |
+| Quick lookup | LLM Agent | Simple, single-step |
+| Brainstorming | Parallel Agent | Multiple viewpoints |
+| Problem solving | Loop Agent | Progressive refinement |
+| Report generation | Sequence Agent | Collect → Analyze → Write |
+
+## Combining Types
+
+You can combine agent types within a single team for sophisticated workflows.
+
+### Example: Research & Writing Team
+
+```yaml
+version: "1"
+id: research-writing-team
+name: Research & Writing Team
+description: Comprehensive content creation with research and refinement
+default_agent: coordinator
+
+agents:
+  coordinator:
+    type: llm
+    name: Project Coordinator
+    description: Manages overall workflow
+    instructions:
+      - |
+          Coordinate content creation:
+          1. Route research requests to research_pipeline
+          2. Route writing requests to content_refiner
+          3. Provide final deliverables to user
+    sub_agents:
+      - research_pipeline
+      - content_refiner
+  
+  # Parallel Agent for multi-source research
+  research_pipeline:
+    type: parallel
+    name: Research Pipeline
+    description: Researches from multiple angles
+    instructions:
+      - |
+          Combine all research into comprehensive brief with:
+          - Facts and statistics
+          - Expert opinions
+          - Counterarguments
+          - Source citations
+    sub_agents:
+      - academic_researcher
+      - news_researcher
+      - expert_researcher
+  
+  academic_researcher:
+    type: llm
+    name: Academic Researcher
+    description: Finds academic sources
+    toolsets:
+      - duckduckgo
+  
+  news_researcher:
+    type: llm
+    name: News Researcher
+    description: Finds recent news
+    toolsets:
+      - duckduckgo
+  
+  expert_researcher:
+    type: llm
+    name: Expert Researcher
+    description: Finds expert opinions
+    toolsets:
+      - duckduckgo
+  
+  # Sequence Agent for structured writing
+  content_refiner:
+    type: sequence
+    name: Content Refinement Pipeline
+    description: Creates and polishes content
+    instructions:
+      - |
+          Process content through:
+          1. Drafting based on research
+          2. Structural editing
+          3. Final polish
+    sub_agents:
+      - drafter
+      - structural_editor
+      - copy_editor
+  
+  drafter:
+    type: llm
+    name: Draft Writer
+    description: Creates initial draft
+  
+  structural_editor:
+    type: llm
+    name: Structural Editor
+    description: Improves structure and flow
+  
+  copy_editor:
+    type: llm
+    name: Copy Editor
+    description: Final polish and proofreading
 ```
 
-## Circular Reference Protection
+## Performance Considerations
 
-The system prevents infinite loops:
+### Execution Time
 
-```json
-❌ // This would fail
-{
-  "agent_a": {
-    "type": "sequence",
-    "sub_agents": ["agent_b"]
-  },
-  "agent_b": {
-    "type": "sequence",
-    "sub_agents": ["agent_a"]  // Circular!
-  }
-}
-```
+| Type | Time Complexity | Notes |
+|------|----------------|-------|
+| LLM Agent | 1x | Single execution |
+| Parallel Agent | ~1x | Concurrent (as slow as slowest sub-agent) |
+| Loop Agent | N×1x | N = max_iterations |
+| Sequence Agent | N×1x | N = number of sub-agents |
 
-**Error:** `Circular reference detected: agent_a -> agent_b -> agent_a`
+### Cost Implications
 
----
+- **Parallel**: Cost of all sub-agents, but faster wall-clock time
+- **Loop**: Linear cost increase with iterations
+- **Sequence**: Linear cost increase with pipeline length
+- **LLM**: Single execution cost
 
-## Performance Tips
+### Optimization Tips
 
-### Parallel Agents
+1. **Parallel**: Keep sub-agents similar in complexity
+2. **Loop**: Use 2-3 iterations typically (more = diminishing returns)
+3. **Sequence**: Minimize pipeline length when possible
+4. **General**: Cache results when appropriate
 
-- Use `max_concurrency` to limit resource usage
-- Balance speed vs. cost (more concurrent = more API calls)
-- Monitor total execution time
+## Troubleshooting
 
-### Loop Agents
+### Common Issues
 
-- Keep `max_iterations` reasonable (typically 3-5)
-- Use `exit_on_error: true` for reliability
-- Consider cost of multiple iterations
+**Parallel Agent Not Working**
+- ✅ Check: Have you defined sub-agents?
+- ✅ Check: Are sub-agents independent (no communication needed)?
+- ✅ Check: Did you add instructions for combining results?
 
-### Sequence Agents
+**Loop Agent Not Improving**
+- ✅ Check: Are instructions guiding refinement?
+- ✅ Check: Is max_iterations reasonable (2-4)?
+- ✅ Check: Can the sub-agent access necessary context?
 
-- Minimize number of stages (each adds latency)
-- Consider combining simple stages
-- Ensure clear output formatting between stages
+**Sequence Agent Failing**
+- ✅ Check: Are sub-agents in correct order?
+- ✅ Check: Does each agent produce suitable input for the next?
+- ✅ Check: Are early stages validating inputs?
 
----
+**Type Not Recognized**
+- ✅ Check: Did you spell type correctly? (`"llm"`, `"parallel"`, `"loop"`, `"sequence"`)
+- ✅ Check: Is the type in quotes?
+- ✅ Check: Is the YAML syntax valid?
 
 ## Next Steps
 
-- **[Creating Agents](creating-agents.md)** - Build your own agents
-- **[Examples](examples.md)** - More real-world templates
-- **[Multi-Persona Workflows](../advanced/multi-persona.md)** - Advanced patterns
+- **[Creating Agents](creating-agents.md)** - Build your first team
+- **[Configuration](configuration.md)** - Complete reference
+- **[Examples](examples.md)** - Real-world templates
+- **[Multi-Agent Workflows](../advanced/multi-agent.md)** - Complex patterns
 
 ---
 
 **Related:**  
-[Agent Overview](overview.md) | [Creating Agents](creating-agents.md) | [Configuration](configuration.md)
-
+[Overview](overview.md) | [Creating Teams](creating-agents.md) | [Examples](examples.md)

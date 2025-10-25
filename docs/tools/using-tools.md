@@ -1,343 +1,852 @@
 # Using Tools
 
-Best practices and patterns for integrating MCP tools into your agents.
+Best practices and patterns for integrating tools into your agent teams.
 
-## Tool Integration Patterns
+## Getting Started with Tools
 
-### Pattern 1: Research and Information Gathering
+### Basic Tool Integration
 
-Use web search tools to gather current information.
+The simplest tool integration:
 
-```json
-{
-  "name": "researcher",
-  "description": "Researches topics using web search",
-  "instructions": [
-    {
-      "content": "When researching topics:\n\n**Search Strategy:**\n1. Use specific, targeted search queries\n2. Search multiple times for comprehensive coverage\n3. Cross-reference information from multiple sources\n4. Note publication dates for time-sensitive info\n\n**Source Quality:**\n- Prefer authoritative sources (.edu, .gov, established media)\n- Check author credentials when available\n- Note any potential bias\n- Verify facts across sources\n\n**Citation:**\n- Always include source URLs\n- Note publication dates\n- Cite key quotes with attribution\n\n**Present findings clearly with proper citations**"
-    }
-  ],
-  "toolsets": ["duckduckgo"]
-}
+```yaml
+agents:
+  weather_helper:
+    type: llm
+    toolsets:
+      - weather-tool
+    instructions:
+      - |
+          When users ask about weather, use the weather tool to get current 
+          conditions or forecasts. Present the information clearly.
 ```
 
-**Best for:**
-- Research agents
-- Fact-checking
-- Current events
-- Product research
+**That's it!** The agent automatically:
+- Receives tool descriptions
+- Knows when to use the tool
+- Invokes the tool correctly
+- Processes tool results
+- Incorporates results into responses
 
----
+### Adding Multiple Tools
 
-### Pattern 2: Persistent Data Storage
-
-Use memory-server to store and retrieve user data across sessions.
-
-```json
-{
-  "name": "preference_manager",
-  "description": "Manages user preferences and shopping history",
-  "instructions": [
-    {
-      "content": "Manage user preferences:\n\n**Storing Data:**\n```\n- Save after user expresses preference\n- Use descriptive categories (preferences, history, settings)\n- Include context for future reference\n- Confirm save with user\n```\n\n**Retrieving Data:**\n```\n- Check for existing preferences at start of session\n- Use categories to organize retrieval\n- Combine multiple preferences intelligently\n- Note when preferences might be outdated\n```\n\n**Privacy:**\n```\n- Only store what user explicitly wants saved\n- Explain what's being stored\n- Honor deletion requests immediately\n- Don't share data across users\n```"
-    }
-  ],
-  "toolsets": ["memory-server"]
-}
+```yaml
+agents:
+  research_assistant:
+    type: llm
+    toolsets:
+      - duckduckgo       # Web search
+      - memory-server    # Data storage
+    instructions:
+      - |
+          Research topics using web search.
+          Store important findings in memory for future reference.
 ```
 
-**Storage categories:**
-```json
-{
-  "category": "user-preferences",
-  "content": "Prefers organic products, budget-conscious, vegetarian diet"
-}
+## Tool Usage Patterns
+
+### Research Pattern
+
+Search, analyze, and store findings.
+
+```yaml
+researcher:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Research workflow:
+        
+        1. **Search Phase**
+           - Use duckduckgo to search for topic
+           - Gather information from top results
+           - Cross-reference multiple sources
+        
+        2. **Analysis Phase**
+           - Synthesize findings
+           - Identify key insights
+           - Note any conflicts or gaps
+        
+        3. **Storage Phase**
+           - Store key findings in memory-server
+           - Use descriptive keys: "research_{topic}_{date}"
+           - Include source citations
+        
+        4. **Presentation Phase**
+           - Present organized summary to user
+           - Cite sources
+           - Note confidence level
 ```
 
-```json
-{
-  "category": "shopping-history",
-  "content": "Frequently purchases: almond milk, quinoa, fresh vegetables"
-}
+**Key benefits:**
+- Systematic information gathering
+- Persistent knowledge base
+- Source traceability
+- Reusable research
+
+### Personalization Pattern
+
+Retrieve and apply user preferences.
+
+```yaml
+personal_assistant:
+  toolsets:
+    - memory-server
+  instructions:
+    - |
+        Personalization workflow:
+        
+        **Session Start:**
+        1. Retrieve "user_preferences" from memory-server
+        2. Load "conversation_context" if continuing work
+        3. Apply preferences to behavior
+        
+        **During Conversation:**
+        1. Note new preferences user expresses
+        2. Update "user_preferences" immediately
+        3. Apply new preferences to current and future responses
+        
+        **Session End:**
+        1. Store "conversation_context" for continuity
+        2. Save any preference updates
+        3. Store "session_summary_{timestamp}"
+        
+        **Preference Types:**
+        - Communication style (formal/casual)
+        - Output format (detailed/concise)
+        - Topics of interest
+        - Dietary restrictions
+        - Timezone and locale
 ```
 
-**Best for:**
-- Personalization
-- User preferences
-- Shopping lists
-- Historical data
+**Key benefits:**
+- Consistent experience across sessions
+- Adaptive behavior
+- User doesn't repeat preferences
+- Context continuity
 
----
+### Notification Pattern
 
-### Pattern 3: Scheduled Notifications
+Monitor and alert users.
 
-Use notification-server to send timely reminders.
-
-```json
-{
-  "name": "reminder_agent",
-  "description": "Creates and manages reminders",
-  "instructions": [
-    {
-      "content": "Manage reminders:\n\n**Creating Reminders:**\n```\n1. Confirm time and timezone with user\n2. Use clear, actionable notification text\n3. Keep messages under 100 characters\n4. Include essential info only\n```\n\n**Timing:**\n```\n- Respect user's quiet hours (10 PM - 8 AM)\n- Send work reminders during business hours\n- Consider lead time (notify 30min before events)\n```\n\n**Follow-up:**\n```\n- Confirm notification was scheduled\n- Provide way to cancel/modify\n- Store reminder in memory for reference\n```"
-    }
-  ],
-  "toolsets": ["notification-server", "memory-server"]
-}
+```yaml
+reminder_service:
+  toolsets:
+    - google-calendar
+    - notification-server
+    - memory-server
+  instructions:
+    - |
+        Reminder workflow:
+        
+        **Monitoring Loop:**
+        Every 15 minutes:
+        1. Check google-calendar for upcoming events (next 60 min)
+        2. Load "notified_events" from memory-server
+        3. Filter out already-notified events
+        
+        **Notification Decision:**
+        For each unnotified upcoming event:
+        - 60 min before: Optional heads-up
+        - 15 min before: Always notify
+        - 5 min before: Urgent reminder
+        
+        **Send Notification:**
+        1. Send via notification-server with:
+           - Event title and time
+           - Location (if any)
+           - Action button: "View Details"
+        2. Add event ID to "notified_events" in memory-server
+        3. Log notification for tracking
+        
+        **Error Handling:**
+        - If notification fails, retry once after 1 minute
+        - If still fails, log error but don't block
 ```
 
-**Best for:**
-- Reminder systems
-- Event notifications
-- Task alerts
-- Time-sensitive updates
+**Key benefits:**
+- Timely alerts
+- No duplicate notifications
+- Persistent tracking
+- Graceful failures
 
----
+### Orchestration Pattern
 
-### Pattern 4: Calendar Integration
+Coordinate multiple tools for complex workflows.
 
-Use google-calendar for scheduling and availability checking.
-
-```json
-{
-  "name": "meeting_scheduler",
-  "description": "Schedules meetings and checks availability",
-  "instructions": [
-    {
-      "content": "Manage calendar:\n\n**Scheduling Meetings:**\n```\n1. Check current calendar for conflicts\n2. Suggest 2-3 available time slots\n3. Consider meeting duration and buffer time\n4. Add location and video link if relevant\n5. Confirm before creating event\n```\n\n**Finding Availability:**\n```\n- Look for gaps between existing events\n- Consider minimum meeting duration\n- Respect working hours preferences\n- Flag potential conflicts\n```\n\n**Modifications:**\n```\n- Always confirm before changing events\n- Notify attendees of changes\n- Check for cascading conflicts\n```"
-    }
-  ],
-  "toolsets": ["google-calendar"]
-}
+```yaml
+travel_planner:
+  toolsets:
+    - google-calendar
+    - weather-tool
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Travel planning workflow:
+        
+        **Phase 1: Information Gathering**
+        1. Get trip dates from user or google-calendar
+        2. Get destination weather forecast via weather-tool
+        3. Research destination via duckduckgo:
+           - Attractions and activities
+           - Restaurants and hotels
+           - Local transportation
+           - Current events
+        
+        **Phase 2: Personalization**
+        1. Load "travel_preferences" from memory-server:
+           - Budget level
+           - Activity preferences
+           - Dietary restrictions
+           - Accommodation preferences
+        2. Filter recommendations by preferences
+        
+        **Phase 3: Itinerary Creation**
+        1. Create day-by-day plan considering:
+           - Weather forecast
+           - User preferences
+           - Travel time between locations
+        2. Store itinerary in memory-server: "trip_{destination}_{date}"
+        
+        **Phase 4: Calendar Integration**
+        1. Offer to add to google-calendar
+        2. Create events for:
+           - Flight times
+           - Hotel check-in/out
+           - Reserved activities
+           - Restaurant reservations
+        
+        **Phase 5: Ongoing Support**
+        1. Store plan in memory-server for later reference
+        2. Offer to send reminders day-of
+        3. Provide packing checklist based on weather
 ```
 
-**Best for:**
-- Meeting scheduling
-- Calendar management
-- Availability checking
-- Event coordination
+**Key benefits:**
+- Comprehensive planning
+- Personalized recommendations
+- Integrated schedule
+- Persistent itinerary
 
----
+## Tool Instruction Patterns
 
-## Multi-Tool Patterns
+### Explicit Tool Guidance
 
-### Pattern 5: Research + Storage
+Specify exactly when and how to use each tool.
 
-Combine web search with persistent storage for personalized research.
-
-```json
-{
-  "name": "personalized_researcher",
-  "description": "Researches topics and remembers user interests",
-  "instructions": [
-    {
-      "content": "Provide personalized research:\n\n**Workflow:**\n1. Check memory for user interests and past research\n2. Use web search for current information\n3. Filter/prioritize based on user preferences\n4. Save new insights to memory\n5. Build on previous research\n\n**Example:**\n- User interested in 'sustainable fashion'\n- Search for latest sustainable brands\n- Filter by previously noted preferences (budget, style)\n- Save new brands to memory\n- Reference past findings in new research"
-    }
-  ],
-  "toolsets": ["duckduckgo", "memory-server"]
-}
+```yaml
+instructions:
+  - |
+      Tool Usage Guidelines:
+      
+      **duckduckgo (Web Search)**
+      When to use:
+      - User asks about current events
+      - Need facts not in training data
+      - Research required
+      
+      How to use:
+      - Formulate specific, targeted queries
+      - Review top 5-10 results
+      - Cross-reference information
+      - Cite sources in response
+      
+      When NOT to use:
+      - Information in training data
+      - Personal opinions (no factual answer)
+      - Already searched recently (check memory first)
+      
+      **memory-server (Data Persistence)**
+      When to use:
+      - Storing user preferences
+      - Saving research findings
+      - Preserving conversation context
+      - Tracking user data
+      
+      How to use:
+      - Use descriptive keys
+      - Store as JSON for complex data
+      - Include timestamps
+      - Update rather than duplicate
+      
+      Keys to use:
+      - "user_preferences": General preferences
+      - "research_{topic}": Research findings
+      - "context_{session_id}": Conversation context
 ```
 
----
+### Tool Combination Strategies
 
-### Pattern 6: Calendar + Notifications
+Guide agents on using tools together.
 
-Combine calendar with notifications for complete event management.
-
-```json
-{
-  "name": "event_manager",
-  "description": "Manages events with reminders",
-  "instructions": [
-    {
-      "content": "Manage events end-to-end:\n\n**When creating events:**\n1. Add to calendar\n2. Schedule notification 30min before\n3. Schedule notification 1 day before (for important events)\n4. Confirm both were created\n\n**For recurring events:**\n- Set up calendar recurrence\n- Schedule notification for each occurrence\n- Store event details in memory\n\n**For event changes:**\n- Update calendar\n- Cancel old notifications\n- Create new notifications\n- Inform user of all changes"
-    }
-  ],
-  "toolsets": ["google-calendar", "notification-server", "memory-server"]
-}
+```yaml
+instructions:
+  - |
+      Multi-Tool Strategies:
+      
+      **Cache-Then-Fetch Pattern:**
+      1. Check memory-server for cached data
+      2. If cache hit and fresh → use cached data
+      3. If cache miss or stale → fetch from source tool
+      4. Update cache in memory-server
+      5. Use fresh data
+      
+      Example:
+      - Check memory-server for "weather_{location}_{date}"
+      - If found and < 1 hour old, use it
+      - Otherwise, call weather-tool
+      - Store result in memory-server
+      
+      **Research-and-Store Pattern:**
+      1. Search with duckduckgo
+      2. Analyze results
+      3. Store findings in memory-server
+      4. Return synthesized response
+      
+      **Notify-and-Log Pattern:**
+      1. Send notification via notification-server
+      2. Store notification details in memory-server
+      3. Track success/failure
+      4. Don't duplicate notifications
 ```
 
----
+### Error Handling Instructions
 
-## Tool Configuration
+Guide agents on tool failures.
 
-### Conditional Tool Access
-
-Restrict tools based on agent mode or user permissions.
-
-```json
-{
-  "name": "data_manager",
-  "description": "Manages data with role-based access",
-  "toolsets": [
-    {
-      "name": "memory-server",
-      "exclude": [
-        {
-          "tool": "delete",
-          "if": "setting.readOnlyMode == true"
-        },
-        {
-          "tool": "update",
-          "if": "setting.readOnlyMode == true"
-        }
-      ]
-    }
-  ]
-}
+```yaml
+instructions:
+  - |
+      Tool Error Handling:
+      
+      **If duckduckgo fails:**
+      - Inform user: "Web search is temporarily unavailable"
+      - Use training data knowledge where appropriate
+      - Add caveat: "This information may not be current"
+      - Don't block the response completely
+      
+      **If memory-server fails:**
+      - Continue without stored preferences
+      - Ask user for preferences directly
+      - Log the error
+      - Retry important operations once
+      - Don't fail the entire request
+      
+      **If notification-server fails:**
+      - Present information in chat instead
+      - Retry once after brief delay
+      - Log the failure
+      - Inform user if notification couldn't be sent
+      
+      **If weather-tool fails:**
+      - Inform user: "Weather data unavailable"
+      - Offer to try again
+      - Provide last known data if available
+      - Don't speculate about weather
+      
+      **General Principle:**
+      Degrade gracefully - never block the entire user request due to 
+      a single tool failure. Provide the best possible experience with 
+      available tools.
 ```
 
-**Use cases:**
-- Read-only mode for viewers
-- Limited access for trial users
-- Safety mode for testing
-- Compliance requirements
+## Tool Performance Optimization
 
----
+### Caching Strategy
 
-## Security Best Practices
+Reduce redundant tool calls with caching.
 
-### 1. Data Privacy
-
-**DO:**
-- Only store necessary information
-- Use user-scoped storage (memory-server handles this automatically)
-- Explain what data is being saved
-- Honor deletion requests promptly
-
-**DON'T:**
-- Store sensitive information (passwords, credit cards)
-- Share user data across accounts
-- Keep data indefinitely without purpose
-
-### 2. Tool Error Handling
-
-```json
-{
-  "content": "Handle tool errors gracefully:\n\n**Network Failures:**\n- Inform user of connection issue\n- Suggest retry after brief wait\n- Provide cached/alternative info if available\n\n**Permission Errors:**\n- Explain authentication need\n- Guide through OAuth flow\n- Respect declined permissions\n\n**Rate Limits:**\n- Explain temporary limitation\n- Provide estimated wait time\n- Suggest alternatives if available"
-}
+```yaml
+cached_researcher:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Smart Caching Strategy:
+        
+        **Before web search:**
+        1. Check memory-server for "search_cache_{query_hash}"
+        2. If found and < 24 hours old:
+           - Use cached results
+           - Note to user: "Based on recent search"
+        3. If not found or stale:
+           - Perform new search
+           - Cache results with timestamp
+           - Use fresh results
+        
+        **Cache Management:**
+        - TTL: 24 hours for general searches
+        - TTL: 1 hour for news/current events
+        - TTL: 1 week for static reference information
+        - Store: query, results, timestamp, source
+        
+        **Benefits:**
+        - Faster responses
+        - Reduced API costs
+        - Consistent results within session
 ```
 
-### 3. OAuth Tools
+### Parallel Tool Calls
 
-For tools requiring OAuth (google-calendar):
+Use tools concurrently when possible.
 
-```json
-{
-  "content": "OAuth tool usage:\n\n**First Use:**\n1. Explain why permission is needed\n2. List specific permissions required\n3. Guide through authorization\n4. Confirm successful connection\n\n**Ongoing:**\n- Check token validity before operations\n- Handle re-authentication gracefully\n- Respect scope limitations\n\n**User Control:**\n- Explain how to revoke access\n- Don't request unnecessary permissions\n- Store tokens securely (handled by system)"
-}
+```yaml
+parallel_data_gatherer:
+  toolsets:
+    - weather-tool
+    - google-calendar
+    - memory-server
+  instructions:
+    - |
+        Parallel Tool Usage:
+        
+        **When tools are independent:**
+        Make calls concurrently to reduce latency.
+        
+        Example - Morning Briefing:
+        Fetch simultaneously:
+        - Today's calendar from google-calendar
+        - Today's weather from weather-tool
+        - User preferences from memory-server
+        
+        Then synthesize all data into briefing.
+        
+        **When tools depend on each other:**
+        Call sequentially.
+        
+        Example - Personalized Weather:
+        1. First: Get location from memory-server
+        2. Then: Get weather-tool forecast for that location
 ```
 
----
+### Lazy Loading
 
-## Performance Optimization
+Only call tools when absolutely needed.
 
-### Minimize Tool Calls
-
-**Inefficient:**
+```yaml
+lazy_assistant:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Lazy Tool Loading:
+        
+        **Don't preemptively call tools "just in case"**
+        
+        ❌ Bad:
+        - Load all preferences at start
+        - Search web for every topic mentioned
+        - Store everything in memory
+        
+        ✅ Good:
+        - Load preferences only when needed for decision
+        - Search web only when training data insufficient
+        - Store only important/reusable information
+        
+        **Example:**
+        User: "What's 2 + 2?"
+        - Don't search web (simple math)
+        - Don't load preferences (not relevant)
+        - Just respond: "4"
+        
+        User: "What are current mortgage rates?"
+        - Do search web (current data needed)
+        - Don't load preferences (first mention of finance)
+        - Respond with findings
+        
+        User: "Find me a recipe for dinner"
+        - Do load dietary preferences from memory
+        - Do search web for recipes
+        - Filter results by preferences
 ```
-1. Search for "best laptops"
-2. Search for "laptop reviews"
-3. Search for "laptop prices"
-4. Search for "where to buy laptops"
+
+## Advanced Patterns
+
+### Tool Chaining
+
+Create sequences of tool operations.
+
+```yaml
+content_creator:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Content Creation Chain:
+        
+        **Step 1: Research**
+        - Search duckduckgo for topic
+        - Gather facts, statistics, quotes
+        - Store in memory-server: "research_{topic}"
+        
+        **Step 2: Outline**
+        - Load research from memory-server
+        - Create content outline
+        - Store in memory-server: "outline_{topic}"
+        
+        **Step 3: Draft**
+        - Load outline from memory-server
+        - Load research from memory-server
+        - Write full draft
+        - Store in memory-server: "draft_{topic}_v1"
+        
+        **Step 4: Revision**
+        - Load draft from memory-server
+        - Apply improvements
+        - Store in memory-server: "draft_{topic}_v2"
+        
+        Each step builds on previous via memory-server.
 ```
 
-**Efficient:**
+### Conditional Tool Usage
+
+Use tools based on settings or context.
+
+```yaml
+adaptive_assistant:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - "settings.research_mode": |
+        RESEARCH MODE ACTIVE
+        
+        - Use duckduckgo liberally for fact-checking
+        - Store all findings in memory-server
+        - Provide extensive citations
+        - Cross-reference multiple sources
+    
+    - "!settings.research_mode": |
+        STANDARD MODE
+        
+        - Use duckduckgo only when necessary
+        - Focus on concise responses
+        - Store only important context in memory-server
+    
+    - |
+        Adaptive tool usage based on mode setting.
 ```
-1. Search for "best laptops 2025 reviews prices"
-2. Process comprehensive results
+
+### Tool Feedback Loops
+
+Use tool results to guide further tool usage.
+
+```yaml
+iterative_researcher:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Iterative Research:
+        
+        **Initial Search:**
+        1. Search duckduckgo for main topic
+        2. Analyze results for:
+           - Sufficient information?
+           - Conflicting information?
+           - Gaps in coverage?
+           - Related subtopics?
+        
+        **Follow-up Searches:**
+        Based on initial results:
+        - If conflicts found: Search for authoritative sources
+        - If gaps identified: Search specific subtopics
+        - If outdated: Add date filters to search
+        - If insufficient: Try alternative search terms
+        
+        **Convergence:**
+        Continue until:
+        - Sufficient information gathered
+        - No significant conflicts
+        - All key aspects covered
+        - Or maximum 5 searches reached
+        
+        **Store in memory-server:**
+        - All search queries tried
+        - Key findings from each
+        - Final synthesized research
 ```
 
-### Batch Operations
+### Tool Result Validation
 
-When using memory-server, batch related operations:
+Verify and validate tool results.
 
-```json
-{
-  "content": "Store related preferences together:\n\n**Instead of:**\n- Save \"likes organic\" (separate call)\n- Save \"budget conscious\" (separate call)\n- Save \"vegetarian\" (separate call)\n\n**Do:**\n- Save \"Shopping preferences: organic, budget-conscious, vegetarian\" (single call)"
-}
+```yaml
+validated_assistant:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Tool Result Validation:
+        
+        **For duckduckgo results:**
+        Validate:
+        - Are sources credible? (check domains)
+        - Is information consistent across sources?
+        - Are dates recent enough?
+        - Are there conflicts?
+        
+        Quality tiers:
+        - High: .edu, .gov, major news, peer-reviewed
+        - Medium: Established publications, recognized experts
+        - Low: Blogs, forums, unknown sources
+        
+        Prefer high-quality sources. Note when only low-quality available.
+        
+        **For memory-server results:**
+        Validate:
+        - Is data format correct?
+        - Is timestamp reasonable (not too old)?
+        - Is data complete (no missing fields)?
+        
+        If validation fails:
+        - Fetch fresh data
+        - Update cache
+        - Log validation failure
 ```
 
-### Cache Results
+## Tool Security Best Practices
 
-For expensive operations, save results:
+### Data Privacy
 
-```json
-{
-  "content": "Cache search results:\n\n1. Search web for product info\n2. Save results to memory-server\n3. For follow-up questions, check memory first\n4. Only search again if info is stale (>1 day old)"
-}
+Protect user data when using tools.
+
+```yaml
+privacy_conscious_agent:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Privacy Guidelines:
+        
+        **Web Search (duckduckgo):**
+        ❌ Never include in search queries:
+        - User names
+        - Email addresses
+        - Phone numbers
+        - Credit card info
+        - Personal identifiers
+        
+        ✅ Generalize queries:
+        - "Best Italian restaurants" not "Best near John Smith"
+        - "Child nutrition" not "nutrition for 8-year-old Jenny"
+        
+        **Data Storage (memory-server):**
+        ❌ Never store:
+        - Passwords or credentials
+        - Credit card numbers
+        - Social security numbers
+        - Health records
+        - Other sensitive PII
+        
+        ✅ Safe to store:
+        - User preferences
+        - Settings and configuration
+        - Non-sensitive context
+        - Pseudonymized data
 ```
 
----
+### Rate Limiting
+
+Respect tool rate limits.
+
+```yaml
+rate_limited_agent:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Rate Limiting:
+        
+        **Track usage:**
+        Store in memory-server:
+        - "tool_usage_duckduckgo": Array of timestamps
+        - "tool_usage_weather": Array of timestamps
+        
+        **Before tool call:**
+        1. Load usage history from memory-server
+        2. Count calls in last minute
+        3. If limit reached:
+           - Wait or return error
+           - Inform user of limit
+           - Suggest alternative
+        4. If under limit:
+           - Make call
+           - Add timestamp to history
+           - Store updated history
+        
+        **Rate Limits:**
+        - duckduckgo: 10 calls/minute
+        - weather-tool: 60 calls/minute
+        - memory-server: 100 calls/minute
+        - notification-server: 10 calls/minute
+```
+
+### Error Recovery
+
+Handle tool errors gracefully.
+
+```yaml
+resilient_agent:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Error Recovery Strategy:
+        
+        **Retry Logic:**
+        - Network errors: Retry once after 1 second
+        - Rate limit errors: Wait and retry
+        - Auth errors: Don't retry, report issue
+        - Other errors: Retry once
+        
+        **Fallback Strategy:**
+        Level 1: Try primary tool
+        Level 2: Try cached data (if available)
+        Level 3: Use training data knowledge
+        Level 4: Inform user of limitation
+        
+        **Never:**
+        - Fail silently
+        - Block entire response
+        - Retry endlessly
+        - Expose internal error details to user
+        
+        **Always:**
+        - Log errors for debugging
+        - Inform user gracefully
+        - Provide best alternative
+        - Continue with available capabilities
+```
 
 ## Testing Tools
 
-### Development Testing
+### Tool Integration Testing
 
-Test each tool independently:
+Test tools work as expected.
 
-```json
-{
-  "name": "tool_tester",
-  "instructions": [
-    {
-      "content": "Test tools systematically:\n\n**Web Search:**\n- Test with various query types\n- Verify results are current\n- Check error handling\n\n**Memory:**\n- Test save/retrieve cycle\n- Verify data isolation\n- Test deletion\n\n**Notifications:**\n- Test immediate send\n- Test scheduled notifications\n- Verify delivery"
-    }
-  ],
-  "toolsets": ["duckduckgo", "memory-server", "notification-server"]
-}
+```yaml
+tool_test_agent:
+  toolsets:
+    - duckduckgo
+    - memory-server
+  instructions:
+    - |
+        Tool Testing Checklist:
+        
+        **Basic Functionality:**
+        - Can call tool successfully?
+        - Does tool return expected format?
+        - Are results reasonable?
+        
+        **Error Handling:**
+        - What happens if tool times out?
+        - What happens if tool returns error?
+        - What happens if tool unavailable?
+        
+        **Performance:**
+        - What is average response time?
+        - Does tool handle concurrent calls?
+        - Are there rate limits?
+        
+        **Integration:**
+        - Can combine with other tools?
+        - Can chain tool calls?
+        - Can cache tool results?
 ```
 
-### Error Scenarios
+## Common Pitfalls
 
-Test tool failure handling:
+### Over-reliance on Tools
 
-- Network disconnection
-- Invalid parameters
-- Rate limiting
-- Permission denied
-- Service unavailable
+❌ **Don't call tools unnecessarily:**
 
----
-
-## Tool Combination Guidelines
-
-### Compatible Combinations
-
-**Research + Storage:**
+```yaml
+# Bad - searches web for everything
+bad_agent:
+  instructions:
+    - |
+        For every question, search the web for an answer.
 ```
-duckduckgo + memory-server
-```
-Store research findings for future reference
 
-**Calendar + Notifications:**
-```
-google-calendar + notification-server
-```
-Complete event management with reminders
+✅ **Use tools when needed:**
 
-**Search + All Storage:**
+```yaml
+# Good - uses web search appropriately
+good_agent:
+  instructions:
+    - |
+        Use web search when:
+        - Question requires current information
+        - Training data is insufficient
+        - Facts need verification
+        
+        Otherwise, use training knowledge.
 ```
-duckduckgo + memory-server + notification-server
+
+### Ignoring Tool Failures
+
+❌ **Don't assume tools always work:**
+
+```yaml
+# Bad - no error handling
+bad_agent:
+  instructions:
+    - |
+        Search web for answer. Present results.
 ```
-Research, save findings, set follow-up reminders
 
-### Avoid Redundancy
+✅ **Handle errors gracefully:**
 
-**Don't combine tools that duplicate functionality:**
-- Multiple search tools (stick to one)
-- Multiple storage tools (memory-server is sufficient)
+```yaml
+# Good - handles failures
+good_agent:
+  instructions:
+    - |
+        Try to search web. If search fails:
+        - Inform user search is unavailable
+        - Provide answer from training data
+        - Note answer may not be current
+```
 
----
+### Poor Key Management
+
+❌ **Don't use generic keys:**
+
+```yaml
+# Bad - unclear keys
+bad_keys:
+  - "data"
+  - "info"
+  - "stuff"
+```
+
+✅ **Use descriptive keys:**
+
+```yaml
+# Good - clear, structured keys
+good_keys:
+  - "user_preferences"
+  - "research_ai_ethics_2024"
+  - "session_context_abc123"
+```
 
 ## Next Steps
 
 - **[Available Tools](available-tools.md)** - Complete tool catalog
-- **[Creating Tools](creating-tools.md)** - Build custom MCP servers
-- **[Agent Examples](../agents/examples.md)** - See tools in action
+- **[Tools Overview](overview.md)** - Understanding tools
+- **[Agent Examples](../agents/examples.md)** - Teams using tools
 
 ---
 
 **Related:**  
-[Tools Overview](overview.md) | [Available Tools](available-tools.md) | [Creating Agents](../agents/creating-agents.md)
-
+[Overview](overview.md) | [Available Tools](available-tools.md) | [Creating Teams](../agents/creating-agents.md)

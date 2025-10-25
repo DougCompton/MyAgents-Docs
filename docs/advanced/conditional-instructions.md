@@ -1,512 +1,677 @@
 # Conditional Instructions
 
-Dynamic agent behavior based on runtime configuration.
+Dynamic agent behavior using conditional logic based on settings.
 
-## Overview
+## What are Conditional Instructions?
 
-**Conditional instructions** allow you to modify agent behavior based on settings without changing code. Instructions with `if` clauses are evaluated at runtime and included only when conditions are met.
+**Conditional instructions** allow agents to adapt their behavior based on:
+
+- ⚙️ **Settings** - User preferences and configuration
+- 🔄 **Dynamic behavior** - Different instructions for different scenarios
+- 🎛️ **Feature flags** - Enable/disable functionality
 
 ## Basic Syntax
 
-### Structure
+### Instruction Structure
 
-```json
-{
-  "content": "Instructions to apply when condition is true",
-  "if": "setting.<name> <operator> <value>"
-}
+```yaml
+instructions:
+  - if: "settings.setting_name == value"
+    "": |
+      Instructions when condition is true
+  - |
+    Default instructions (always included)
 ```
 
-### Components
+### Simple Example
 
-1. **content**: The instructions to apply
-2. **if**: Boolean expression (condition)
-3. **setting.**: Required prefix for setting references
-4. **operator**: `==` (equals) or `!=` (not equals)
-5. **value**: The value to compare against
-
-## Operators
-
-### Equality (`==`)
-
-Check if setting equals a value:
-
-```json
-{
-  "content": "\nFeature enabled behavior...",
-  "if": "setting.enableFeature == true"
-}
+```yaml
+agents:
+  assistant:
+    instructions:
+      - if: "settings.expert_mode == true"
+        "": |
+          You are in expert mode. Provide technical details,
+          use industry terminology, and include advanced concepts.
+      
+      - |
+        You are in standard mode. Use accessible language
+        and explain concepts clearly.
 ```
 
-### Inequality (`!=`)
+## Supported Conditions
 
-Check if setting does NOT equal a value:
+### Boolean Settings
 
-```json
-{
-  "content": "\nFallback behavior when feature is disabled...",
-  "if": "setting.enableFeature != true"
-}
+**Check if boolean setting is true:**
+```yaml
+instructions:
+  - if: "settings.verbose == true"
+    "": |
+      Verbose mode active - provide detailed explanations
 ```
 
-## Type-Specific Examples
-
-### Boolean Conditions
-
-```json
-{
-  "settings": [
-    {
-      "name": "verboseMode",
-      "type": "bool",
-      "title": "Verbose Mode",
-      "description": "Provide detailed explanations",
-      "defaultValue": false
-    }
-  ],
-  "agents": [
-    {
-      "name": "assistant",
-      "instructions": [
-        {
-          "content": "Base instructions..."
-        },
-        {
-          "content": "\nVERBOSE MODE: Provide detailed explanations with examples and step-by-step reasoning.",
-          "if": "setting.verboseMode == true"
-        },
-        {
-          "content": "\nCONCISE MODE: Keep responses brief and to the point.",
-          "if": "setting.verboseMode == false"
-        }
-      ]
-    }
-  ]
-}
+**Check if boolean setting is false:**
+```yaml
+instructions:
+  - if: "settings.verbose == false"
+    "": |
+      Concise mode - keep responses brief
 ```
 
-### String Conditions
+**Note:** The empty string key `""` is required when using `if` conditions.
 
-**Important:** String values require escaped quotes!
+### String Settings
 
-```json
-{
-  "settings": [
-    {
-      "name": "outputFormat",
-      "type": "string",
-      "title": "Output Format",
-      "description": "Format for responses (markdown, plain, json)",
-      "defaultValue": "markdown"
-    }
-  ],
-  "agents": [
-    {
-      "name": "assistant",
-      "instructions": [
-        {
-          "content": "Base instructions..."
-        },
-        {
-          "content": "\nOUTPUT: Use markdown formatting with headers, lists, and code blocks.",
-          "if": "setting.outputFormat == \"markdown\""
-        },
-        {
-          "content": "\nOUTPUT: Use plain text only. No formatting characters.",
-          "if": "setting.outputFormat == \"plain\""
-        },
-        {
-          "content": "\nOUTPUT: Structure responses as valid JSON objects.",
-          "if": "setting.outputFormat == \"json\""
-        }
-      ]
-    }
-  ]
-}
+**String equality:**
+```yaml
+instructions:
+  - if: "settings.format == \"json\""
+    "": |
+      Output in JSON format
 ```
 
-### Number Conditions
+**Note:** String values must be double-quoted within the condition.
 
-```json
-{
-  "settings": [
-    {
-      "name": "maxResults",
-      "type": "number",
-      "title": "Maximum Results",
-      "description": "Maximum items to return",
-      "defaultValue": 10
-    }
-  ],
-  "agents": [
-    {
-      "name": "searcher",
-      "instructions": [
-        {
-          "content": "Search and provide results..."
-        },
-        {
-          "content": "\nBrief mode: Return top 3 most relevant results only.",
-          "if": "setting.maxResults == 3"
-        },
-        {
-          "content": "\nComprehensive mode: Provide extensive results with detailed analysis.",
-          "if": "setting.maxResults == 20"
-        }
-      ]
-    }
-  ]
-}
+### Limitations
+
+**The following are NOT supported:**
+- ❌ Negation operators (`!`)
+- ❌ Logical operators (`&&`, `||`)
+- ❌ Comparison operators (`>`, `<`, `>=`, `<=`)
+- ❌ Inequality checks (`!=`)
+- ❌ Complex expressions with parentheses
+
+**Workaround:** Use separate explicit conditions for each case:
+
+```yaml
+instructions:
+  - if: "settings.verbose == true"
+    "": |
+      Verbose instructions
+  
+  - |
+    Default (non-verbose) instructions include implicit handling
+    of when verbose is false
+```
+
+## Evaluation Order
+
+Instructions are evaluated **in order** from top to bottom. All matching conditions are included and concatenated.
+
+### Best Practice Ordering
+
+```yaml
+# ✅ GOOD - Base instructions first, then conditionals
+instructions:
+  - |
+    Default instructions (base behavior)
+  
+  - if: "settings.expert_mode == true"
+    "": |
+      Additional expert instructions
 ```
 
 ## Common Patterns
 
-### Feature Flags
-
-Enable/disable entire features:
-
-```json
-{
-  "settings": [
-    {
-      "name": "enableWebSearch",
-      "type": "bool",
-      "title": "Enable Web Search",
-      "description": "Allow searching the web for information",
-      "defaultValue": true
-    }
-  ],
-  "agents": [
-    {
-      "name": "assistant",
-      "instructions": [
-        {
-          "content": "You are a helpful assistant..."
-        },
-        {
-          "content": "\nWEB SEARCH ENABLED:\n- For current events, use web search\n- Always cite sources with URLs\n- Verify information across multiple sources\n- Note publication dates",
-          "if": "setting.enableWebSearch == true"
-        },
-        {
-          "content": "\nWEB SEARCH DISABLED:\n- Use only your knowledge base\n- Note that information may not be current\n- Suggest enabling web search for latest info",
-          "if": "setting.enableWebSearch == false"
-        }
-      ],
-      "toolsets": ["duckduckgo"]
-    }
-  ]
-}
-```
-
 ### Mode Switching
 
-Different behavior modes:
+```yaml
+settings:
+  - name: mode
+    type: string
+    title: Experience Mode
+    description: Adjust explanations based on user experience level
+    defaultValue: intermediate
 
-```json
-{
-  "settings": [
-    {
-      "name": "userLevel",
-      "type": "string",
-      "title": "User Experience Level",
-      "description": "User expertise (beginner, intermediate, expert)",
-      "defaultValue": "intermediate"
-    }
-  ],
-  "agents": [
-    {
-      "name": "tutor",
-      "instructions": [
-        {
-          "content": "You are a programming tutor..."
-        },
-        {
-          "content": "\nBEGINNER MODE:\n- Explain concepts from basics\n- Avoid jargon\n- Provide lots of examples\n- Check understanding frequently",
-          "if": "setting.userLevel == \"beginner\""
-        },
-        {
-          "content": "\nINTERMEDIATE MODE:\n- Assume basic knowledge\n- Introduce some technical terms\n- Balance theory with practice\n- Provide relevant examples",
-          "if": "setting.userLevel == \"intermediate\""
-        },
-        {
-          "content": "\nEXPERT MODE:\n- Assume deep technical knowledge\n- Use industry terminology\n- Focus on edge cases and optimization\n- Discuss tradeoffs and alternatives",
-          "if": "setting.userLevel == \"expert\""
-        }
-      ]
-    }
-  ]
-}
+agents:
+  instructor:
+    instructions:
+      - if: "settings.mode == \"beginner\""
+        "": |
+          BEGINNER MODE
+          - Define all terms
+          - Start with basics
+          - Step-by-step guidance
+          - Lots of examples
+          - Avoid jargon
+      
+      - if: "settings.mode == \"intermediate\""
+        "": |
+          INTERMEDIATE MODE
+          - Assume basic knowledge
+          - Practical focus
+          - Some technical terms okay
+          - Balanced explanations
+      
+      - if: "settings.mode == \"expert\""
+        "": |
+          EXPERT MODE
+          - Advanced concepts
+          - Technical terminology
+          - Architectural discussions
+          - Best practices and trade-offs
+      
+      - |
+        Standard instruction set
 ```
 
-### Cascading Conditions
+### Feature Flags
 
-Layer multiple conditional instructions:
+```yaml
+settings:
+  - name: enable_web_search
+    type: boolean
+    title: Enable Web Search
+    description: Allow searching the web for current information
+    defaultValue: true
+  
+  - name: enable_memory
+    type: boolean
+    title: Enable Memory
+    description: Store and retrieve context from memory
+    defaultValue: true
 
-```json
-{
-  "settings": [
-    {
-      "name": "dietaryMode",
-      "type": "string",
-      "title": "Dietary Restrictions",
-      "description": "Filter by diet (none, vegetarian, vegan, keto)",
-      "defaultValue": "none"
-    },
-    {
-      "name": "budgetMode",
-      "type": "bool",
-      "title": "Budget Mode",
-      "description": "Prioritize affordable options",
-      "defaultValue": false
-    }
-  ],
-  "agents": [
-    {
-      "name": "meal_planner",
-      "instructions": [
-        {
-          "content": "Suggest meals and recipes..."
-        },
-        {
-          "content": "\nDIETARY: Vegetarian filter active. Exclude all meat, poultry, fish.",
-          "if": "setting.dietaryMode == \"vegetarian\""
-        },
-        {
-          "content": "\nDIETARY: Vegan filter active. Exclude all animal products.",
-          "if": "setting.dietaryMode == \"vegan\""
-        },
-        {
-          "content": "\nDIETARY: Keto filter active. Focus on low-carb, high-fat options.",
-          "if": "setting.dietaryMode == \"keto\""
-        },
-        {
-          "content": "\nBUDGET MODE: Prioritize affordable ingredients and recipes under $10/serving.",
-          "if": "setting.budgetMode == true"
-        }
-      ]
-    }
-  ]
-}
+agents:
+  assistant:
+    toolsets:
+      - duckduckgo
+      - memory-server
+    instructions:
+      - |
+        Base capabilities:
+        - Answer questions using training data
+      
+      - if: "settings.enable_web_search == true"
+        "": |
+          Web search enabled:
+          - Use web search for current information
+          - Include sources in responses
+      
+      - if: "settings.enable_memory == true"
+        "": |
+          Memory enabled:
+          - Store important findings for future reference
+          - Retrieve relevant context from previous interactions
+          - Build knowledge base over time
 ```
 
-**Result when both active:**
+### Output Format Switching
+
+```yaml
+settings:
+  - name: output_format
+    type: string
+    title: Output Format
+    description: Format for generated content
+    defaultValue: markdown
+
+agents:
+  formatter:
+    instructions:
+      - if: "settings.output_format == \"markdown\""
+        "": |
+          Format in Markdown:
+          - Use # for headings
+          - Use **bold** and *italic*
+          - Use - for bullet points
+          - Use ``` for code blocks
+      
+      - if: "settings.output_format == \"json\""
+        "": |
+          Format as JSON:
+          - Valid JSON syntax
+          - Proper escaping
+          - No trailing commas
+          - Include structure: {"title": "...", "content": "..."}
+      
+      - if: "settings.output_format == \"html\""
+        "": |
+          Format as HTML:
+          - Use semantic tags
+          - Proper nesting
+          - Close all tags
+      
+      - |
+        Use markdown format (default)
 ```
-Base instructions
-+ Vegetarian filter
-+ Budget mode
-= Affordable vegetarian meals
+
+### Tone Adaptation
+
+```yaml
+settings:
+  - name: tone
+    type: string
+    title: Content Tone
+    description: Writing style and formality
+    defaultValue: friendly
+
+agents:
+  customer_service:
+    instructions:
+      - if: "settings.tone == \"professional\""
+        "": |
+          Professional tone:
+          - "Thank you for contacting us"
+          - "I'd be happy to assist you with..."
+          - Use proper grammar and formal language
+      
+      - if: "settings.tone == \"friendly\""
+        "": |
+          Friendly tone:
+          - "Hi there! How can I help?"
+          - "I'm happy to help you with that!"
+          - Warm and approachable
+      
+      - if: "settings.tone == \"casual\""
+        "": |
+          Casual tone:
+          - "Hey! What's up?"
+          - "Sure thing! Let me help you out"
+          - Relaxed and conversational
+      
+      - |
+        Standard professional-friendly tone
+```
+
+### Priority Levels
+
+```yaml
+settings:
+  - name: priority
+    type: string
+    title: Priority Level
+    description: Request priority level
+    defaultValue: normal
+
+agents:
+  support_agent:
+    toolsets:
+      - notification-server
+    instructions:
+      - if: "settings.priority == \"urgent\""
+        "": |
+          🚨 URGENT PRIORITY
+          - Respond immediately
+          - Escalate to senior team if needed
+          - Send notification to managers
+          - Follow up within 15 minutes
+      
+      - if: "settings.priority == \"high\""
+        "": |
+          ⚡ HIGH PRIORITY
+          - Prioritize this request
+          - Respond within 1 hour
+          - Notify relevant team members
+      
+      - if: "settings.priority == \"normal\""
+        "": |
+          📋 NORMAL PRIORITY
+          - Standard response time (within 4 hours)
+          - Follow normal procedures
+      
+      - if: "settings.priority == \"low\""
+        "": |
+          📌 LOW PRIORITY
+          - Process when time allows
+          - Standard response within 24 hours
+      
+      - |
+          Standard support workflow
+```
+
+## Advanced Patterns
+
+### Layered Feature Enablement
+
+Build up capabilities with multiple feature flags:
+
+```yaml
+settings:
+  - name: enable_search
+    type: boolean
+    title: Enable Search
+    description: Enable web search capabilities
+    defaultValue: true
+  
+  - name: enable_memory
+    type: boolean
+    title: Enable Memory
+    description: Enable persistent memory
+    defaultValue: true
+  
+  - name: enable_notifications
+    type: boolean
+    title: Enable Notifications
+    description: Enable push notifications
+    defaultValue: false
+
+agents:
+  assistant:
+    toolsets:
+      - duckduckgo
+      - memory-server
+      - notification-server
+    instructions:
+      - |
+          Core capabilities:
+          - Answer questions using training data
+      
+      - if: "settings.enable_search == true"
+        "": |
+          Search capability enabled:
+          - Use web search for current information
+          - Cite sources
+      
+      - if: "settings.enable_memory == true"
+        "": |
+          Memory capability enabled:
+          - Store important context
+          - Retrieve relevant history
+          - Build knowledge over time
+      
+      - if: "settings.enable_notifications == true"
+        "": |
+          Notification capability enabled:
+          - Send notifications for important updates
+          - Alert user of completed tasks
+```
+
+### Context-Aware Behavior
+
+Adjust behavior based on user type:
+
+```yaml
+settings:
+  - name: user_type
+    type: string
+    title: User Type
+    description: Type of user (student, professional, researcher)
+    defaultValue: professional
+  
+  - name: detail_level
+    type: string
+    title: Detail Level
+    description: Level of detail in responses (brief, normal, detailed)
+    defaultValue: normal
+
+agents:
+  adaptive_assistant:
+    instructions:
+      - |
+          Base instructions for all users
+      
+      - if: "settings.user_type == \"student\""
+        "": |
+          Student context:
+          - Educational focus
+          - Define technical terms
+          - Include learning resources
+      
+      - if: "settings.user_type == \"professional\""
+        "": |
+          Professional context:
+          - Business implications
+          - Practical applications
+          - ROI considerations
+      
+      - if: "settings.user_type == \"researcher\""
+        "": |
+          Researcher context:
+          - Academic rigor
+          - Methodology details
+          - Citations and references
+      
+      - if: "settings.detail_level == \"brief\""
+        "": |
+          Brief mode:
+          - Concise responses
+          - Key points only
+          - Executive summary style
+      
+      - if: "settings.detail_level == \"detailed\""
+        "": |
+          Detailed mode:
+          - Comprehensive explanations
+          - In-depth analysis
+          - Multiple examples
+```
+
+### Conditional Tool Access
+
+Control which tools are used based on settings:
+
+```yaml
+settings:
+  - name: data_source
+    type: string
+    title: Data Source
+    description: Where to retrieve information from
+    defaultValue: web_and_memory
+
+agents:
+  information_agent:
+    toolsets:
+      - duckduckgo
+      - memory-server
+    instructions:
+      - |
+          Information retrieval agent
+      
+      - if: "settings.data_source == \"web_only\""
+        "": |
+          Web-only mode:
+          - Use duckduckgo for all queries
+          - Do not use memory-server
+          - Fresh data every time
+      
+      - if: "settings.data_source == \"memory_only\""
+        "": |
+          Memory-only mode:
+          - Search memory-server only
+          - Do not use web search
+          - Return cached data if available
+          - Inform user if data not in memory
+      
+      - if: "settings.data_source == \"web_and_memory\""
+        "": |
+          Combined mode:
+          1. Check memory-server for cached data first
+          2. If cache miss, search web via duckduckgo
+          3. Store findings in memory-server
+          4. Return comprehensive results
+      
+      - if: "settings.data_source == \"offline\""
+        "": |
+          Offline mode:
+          - Use training data only
+          - No external tools
+          - Note limitations to user
 ```
 
 ## Best Practices
 
-### 1. Always Include Base Instructions
-
-Start with unconditional instructions:
-
-```json
-{
-  "instructions": [
-    {
-      "content": "You are a helpful assistant. [Core behavior that always applies]"
-    },
-    {
-      "content": "\n[Conditional behavior]",
-      "if": "setting.mode == \"advanced\""
-    }
-  ]
-}
-```
-
-### 2. Use Clear Markers
-
-Make conditional sections obvious:
-
-```json
-{
-  "content": "\n**BUDGET MODE ACTIVE:**\n- Prioritize value\n- Show per-unit pricing\n- Highlight sales",
-  "if": "setting.budgetMode == true"
-}
-```
-
-### 3. Handle All Cases
-
-For mutually exclusive modes, cover all options:
-
-```json
-{
-  "instructions": [
-    {"content": "Base..."},
-    {"content": "\nMode A behavior", "if": "setting.mode == \"a\""},
-    {"content": "\nMode B behavior", "if": "setting.mode == \"b\""},
-    {"content": "\nMode C behavior", "if": "setting.mode == \"c\""}
-  ]
-}
-```
-
-### 4. Keep Conditions Simple
+### Write Clear Conditions
 
 **Good:**
-```json
-{"if": "setting.enabled == true"}
-{"if": "setting.mode == \"advanced\""}
+```yaml
+instructions:
+  - if: "settings.mode == \"expert\""
+    "": |
+      Expert mode instructions
 ```
 
-**Avoid complex logic:**
-```json
-// NOT SUPPORTED
-{"if": "setting.a == true AND setting.b == false"}
-{"if": "setting.value > 10"}
+**Bad:**
+```yaml
+instructions:
+  - if: "settings.m == \"e\""
+    "": |
+      Unclear what this checks
 ```
 
-Use separate conditionals instead:
+### Always Include Default
 
-```json
-{
-  "content": "\nBoth A and B active",
-  "if": "setting.enableA == true"
-},
-{
-  "content": "\nAdditional B behavior",
-  "if": "setting.enableB == true"
-}
+**Good:**
+```yaml
+instructions:
+  - if: "settings.expert_mode == true"
+    "": |
+      Expert instructions
+  
+  - |
+      DEFAULT - Standard instructions
 ```
 
-### 5. Test All Paths
-
-Test agent with each condition:
-- All settings at defaults
-- Each setting toggled individually
-- Common setting combinations
-- Edge cases
-
-## Common Errors
-
-### Missing Quotes for Strings
-
-```json
-❌ "if": "setting.mode == vegan"        // Missing quotes
-✅ "if": "setting.mode == \"vegan\""    // Correct
+**Bad:**
+```yaml
+instructions:
+  - if: "settings.expert_mode == true"
+    "": |
+      Expert instructions
+  
+  # No default! What happens in standard mode?
 ```
 
-### Wrong Prefix
+### Keep Conditions Simple
 
-```json
-❌ "if": "mode == true"                 // Missing "setting."
-✅ "if": "setting.mode == true"         // Correct
+**Good:**
+```yaml
+instructions:
+  - if: "settings.expert_mode == true"
+    "": |
+      Clear, simple condition
+  
+  - if: "settings.format == \"json\""
+    "": |
+      Clear equality check
 ```
 
-### Wrong Operator
+### Document Complex Settings
 
-```json
-❌ "if": "setting.value = 10"           // Single = (assignment)
-✅ "if": "setting.value == 10"          // Double == (comparison)
+```yaml
+settings:
+  - name: priority
+    type: string
+    title: Priority Level
+    description: Request priority (low, normal, high, urgent). Affects response time and escalation rules.
+    defaultValue: normal
+
+agents:
+  support:
+    instructions:
+      # High priority = Immediate detailed response
+      - if: "settings.priority == \"high\""
+        "": |
+          High priority request - provide immediate response
+      
+      # Default = Standard response
+      - |
+          Standard mode - balanced response
 ```
 
-### Invalid Boolean String
+## Testing Conditional Instructions
 
-```json
-❌ "if": "setting.enabled == \"true\""  // String "true"
-✅ "if": "setting.enabled == true"      // Boolean true
+### Test Each Path
+
+For this configuration:
+```yaml
+settings:
+  - name: mode
+    type: string
+    title: Mode
+    description: Operation mode
+    defaultValue: standard
+
+agents:
+  assistant:
+    instructions:
+      - if: "settings.mode == \"advanced\""
+        "": |
+          Advanced instructions
+      - if: "settings.mode == \"simple\""
+        "": |
+          Simple instructions
+      - |
+          Standard instructions
 ```
 
-### Using "if": "true"
+**Test cases:**
+1. Set `mode = "advanced"` → Should see advanced instructions + standard
+2. Set `mode = "simple"` → Should see simple instructions + standard
+3. Set `mode = "standard"` → Should see standard instructions only
 
-```json
-❌ {
-  "content": "Always applies",
-  "if": "true"    // Invalid syntax
-}
+## Common Pitfalls
 
-✅ {
-  "content": "Always applies"
-  // Omit "if" entirely for unconditional instructions
-}
+### Missing Default
+
+❌ **Problem:**
+```yaml
+instructions:
+  - if: "settings.expert_mode == true"
+    "": |
+      Expert instructions
+  # No default!
 ```
 
-## Advanced Techniques
-
-### Instruction Composition
-
-Build complex behavior from simple conditions:
-
-```json
-{
-  "settings": [
-    {"name": "includeImages", "type": "bool", ...},
-    {"name": "includeVideos", "type": "bool", ...},
-    {"name": "includeCharts", "type": "bool", ...}
-  ],
-  "agents": [
-    {
-      "name": "content_creator",
-      "instructions": [
-        {"content": "Create content..."},
-        {
-          "content": "\nINCLUDE IMAGES: Add relevant images with captions.",
-          "if": "setting.includeImages == true"
-        },
-        {
-          "content": "\nINCLUDE VIDEOS: Embed video content where appropriate.",
-          "if": "setting.includeVideos == true"
-        },
-        {
-          "content": "\nINCLUDE CHARTS: Create data visualizations for statistics.",
-          "if": "setting.includeCharts == true"
-        }
-      ]
-    }
-  ]
-}
+✅ **Solution:**
+```yaml
+instructions:
+  - if: "settings.expert_mode == true"
+    "": |
+      Expert instructions
+  - |
+      Standard instructions (default)
 ```
 
-### Tool Exclusions with Conditions
+### Wrong Comparison Operator
 
-Conditionally disable tools:
-
-```json
-{
-  "toolsets": [
-    {
-      "name": "memory-server",
-      "exclude": [
-        {"tool": "delete", "if": "setting.readOnly == true"},
-        {"tool": "update", "if": "setting.readOnly == true"}
-      ]
-    }
-  ]
-}
+❌ **Problem:**
+```yaml
+instructions:
+  - if: "settings.format = \"json\""
+    "": |
+      Single = is assignment, not comparison!
 ```
 
-## Debugging Conditionals
+✅ **Solution:**
+```yaml
+instructions:
+  - if: "settings.format == \"json\""
+    "": |
+      Double == for equality check
+```
 
-### Check Expression Syntax
+### Attempting Unsupported Operators
 
-1. Verify `setting.` prefix
-2. Check operator (`==` or `!=`)
-3. Verify value type matches setting type
-4. For strings, check escaped quotes
+❌ **Problem:**
+```yaml
+instructions:
+  - if: "!settings.verbose"
+    "": |
+      Negation not supported!
+  - if: "settings.a && settings.b"
+    "": |
+      Logical operators not supported!
+```
 
-### Test Individual Conditions
-
-Test each conditional independently:
-
-1. Set only one setting to non-default
-2. Verify that conditional activates
-3. Check behavior is correct
-4. Repeat for each setting
-
-### Review Logs
-
-Server logs show which conditionals are evaluated and their results.
+✅ **Solution:**
+```yaml
+instructions:
+  - if: "settings.verbose == true"
+    "": |
+      Verbose instructions
+  - |
+      Non-verbose behavior in default
+```
 
 ## Next Steps
 
-- **[Settings Guide](settings.md)** - Master settings configuration
-- **[Multi-Persona Workflows](multi-persona.md)** - Complex orchestration
-- **[Examples](../agents/examples.md)** - See conditionals in action
+- **[Settings](settings.md)** - Complete settings documentation
+- **[Configuration Reference](../agents/configuration.md)** - Full schema
+- **[Agent Examples](../agents/examples.md)** - Teams using conditionals
+- **[Multi-Agent Workflows](multi-agent.md)** - Advanced patterns
 
 ---
 
 **Related:**  
-[Settings](settings.md) | [Agent Configuration](../agents/configuration.md) | [Creating Agents](../agents/creating-agents.md)
-
+[Settings](settings.md) | [Configuration](../agents/configuration.md) | [Creating Teams](../agents/creating-agents.md)
