@@ -11,6 +11,17 @@ An **agent** is a specialized AI assistant designed to handle specific business 
 - **Tools** - Integration with external systems and services via MCP
 - **Configuration** - Runtime behavior customization through settings
 
+## Agent Types
+
+MyAgents supports four execution types:
+
+1. **LLM Agent** - Interactive AI assistant (default)
+2. **Parallel Agent** - Run multiple agents concurrently
+3. **Loop Agent** - Execute agent iteratively
+4. **Sequence Agent** - Sequential pipeline processing
+
+See [Agent Types](agent-types.md) for detailed documentation on each type.
+
 ## Agent Architecture
 
 ### Core Components

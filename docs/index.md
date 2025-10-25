@@ -61,6 +61,7 @@ Quick start guide to create your first agent in minutes.
 ### [Agents](agents/overview.md)
 Learn about agent architecture, personas, and workflow patterns.
 
+- [Agent Types](agents/agent-types.md) - LLM, Parallel, Loop, and Sequence agents
 - [Creating Agents](agents/creating-agents.md) - Step-by-step agent creation
 - [Configuration](agents/configuration.md) - Complete configuration reference
 - [Examples](agents/examples.md) - Real-world agent examples
