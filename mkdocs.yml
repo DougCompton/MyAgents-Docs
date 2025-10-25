@@ -1,0 +1,200 @@
+# MyAgents User Guide - MkDocs Configuration
+# This is an example configuration for Material for MkDocs
+# Customize this file for your deployment
+
+# Site information
+site_name: MyAgents User Guide
+site_description: Comprehensive guide for creating and deploying AI agents with MCP tool integration
+site_author: MyAgents Team
+site_url: https://docs.myagents.example.com
+
+# Repository (optional)
+# repo_url: https://github.com/yourusername/myagents
+# repo_name: myagents
+# edit_uri: edit/main/apps/api/docs/user-guide/
+
+# Copyright
+copyright: Copyright &copy; 2025 MyAgents
+
+# Theme configuration
+theme:
+  name: material
+  
+  # Color scheme
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  # Typography
+  font:
+    text: Roboto
+    code: Roboto Mono
+  
+  # Icons and logo
+  icon:
+    repo: fontawesome/brands/github
+    admonition:
+      note: octicons/tag-16
+      abstract: octicons/checklist-16
+      info: octicons/info-16
+      tip: octicons/squirrel-16
+      success: octicons/check-16
+      question: octicons/question-16
+      warning: octicons/alert-16
+      failure: octicons/x-circle-16
+      danger: octicons/zap-16
+      bug: octicons/bug-16
+      example: octicons/beaker-16
+      quote: octicons/quote-16
+  
+  # Features
+  features:
+    # Navigation
+    - navigation.instant        # Instant loading (SPA-like)
+    - navigation.instant.prefetch  # Prefetch pages on hover
+    - navigation.instant.progress  # Show loading progress
+    - navigation.tracking       # Update URL with anchor
+    # - navigation.tabs           # Top-level tabs
+    # - navigation.tabs.sticky    # Sticky tabs
+    - navigation.sections       # Section navigation
+    - navigation.expand         # Expand all sections
+    - navigation.indexes        # Section index pages
+    - navigation.top            # Back to top button
+    - navigation.footer         # Previous/next footer
+    
+    # Table of contents
+    - toc.follow                # Follow current section
+    
+    # Search
+    - search.suggest            # Search suggestions
+    - search.highlight          # Highlight search terms
+    - search.share              # Share search results
+    
+    # Content
+    - content.code.copy         # Copy code blocks
+    - content.code.annotate     # Code annotations
+    - content.tabs.link         # Link content tabs
+
+# Extensions
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+      separator: '[\s\-\.]+'
+#  - minify:
+#      minify_html: true
+#      minify_js: true
+#      minify_css: true
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  
+  - Agents:
+    - agents/overview.md
+    - Creating Agents: agents/creating-agents.md
+    - Configuration: agents/configuration.md
+    - Examples: agents/examples.md
+  
+  - Tools:
+    - tools/overview.md
+    - Available Tools: tools/available-tools.md
+    - Using Tools: tools/using-tools.md
+    - Creating Tools: tools/creating-tools.md
+  
+  - Advanced:
+    - Settings: advanced/settings.md
+    - Conditional Instructions: advanced/conditional-instructions.md
+    - Multi-Persona Workflows: advanced/multi-persona.md
+  
+  - Reference:
+    - JSON Schema: reference/schema.md
+    - API Reference: reference/api.md
+
+# Extra configuration
+extra:
+  # Social links
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/myagents
+      name: MyAgents on GitHub
+  
+  # Analytics (optional - configure with your tracking ID)
+  # analytics:
+  #   provider: google
+  #   property: G-XXXXXXXXXX
+  
+  # Version selector (if you have multiple versions)
+  # version:
+  #   provider: mike
+  #   default: latest
+
+# Extra CSS (optional)
+extra_css:
+  # - stylesheets/extra.css
+
+# Extra JavaScript (optional)
+extra_javascript:
+  # MathJax for mathematical expressions
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+# Validation
+# strict: true  # Enable strict mode for production
+
