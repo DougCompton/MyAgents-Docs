@@ -136,10 +136,10 @@ plugins:
   - search:
       lang: en
       separator: '[\s\-\.]+'
-#  - minify:
-#      minify_html: true
-#      minify_js: true
-#      minify_css: true
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
 
 # Navigation structure
 nav:
@@ -162,11 +162,10 @@ nav:
   - Advanced:
     - Settings: advanced/settings.md
     - Conditional Instructions: advanced/conditional-instructions.md
-    - Multi-Persona Workflows: advanced/multi-persona.md
+    - Multi-Agent Workflows: advanced/multi-agent.md
   
   - Reference:
     - JSON Schema: reference/schema.md
-    - API Reference: reference/api.md
 
 # Extra configuration
 extra:
