@@ -136,10 +136,10 @@ plugins:
   - search:
       lang: en
       separator: '[\s\-\.]+'
-#  - minify:
-#      minify_html: true
-#      minify_js: true
-#      minify_css: true
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
 
 # Navigation structure
 nav:
@@ -148,6 +148,7 @@ nav:
   
   - Agents:
     - agents/overview.md
+    - Agent Types: agents/agent-types.md
     - Creating Agents: agents/creating-agents.md
     - Configuration: agents/configuration.md
     - Examples: agents/examples.md
