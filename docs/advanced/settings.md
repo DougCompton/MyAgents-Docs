@@ -19,7 +19,7 @@ Runtime configuration that allows users to customize team and agent behavior wit
 ```yaml
 settings:
   - name: verbose_mode
-    type: boolean
+    type: bool
     title: Verbose Output
     description: Include detailed explanations in responses
     defaultValue: false
@@ -30,12 +30,13 @@ settings:
 agents:
   assistant:
     instructions:
-      - "settings.verbose_mode": |
+      - if: "settings.verbose_mode"
+        content: |
           VERBOSE MODE
           - Provide detailed explanations
           - Show reasoning process
           - Include examples and context
-      
+
       - |
           STANDARD MODE
           - Provide concise responses
@@ -58,21 +59,24 @@ settings:
 agents:
   writer:
     instructions:
-      - "settings.output_format == 'markdown'": |
+      - if: "settings.output_format == 'markdown'"
+        content: |
           Format output in Markdown:
           - Use ## for headings
           - Use **bold** and *italic*
           - Use bullet points and numbered lists
           - Use code blocks with ```
       
-      - "settings.output_format == 'html'": |
+      - if: "settings.output_format == 'html'"
+        content: |
           Format output in HTML:
           - Use <h2> for headings
           - Use <strong> and <em>
           - Use <ul> and <ol> for lists
           - Use <pre><code> for code
       
-      - "settings.output_format == 'plain_text'": |
+      - if: "settings.output_format == 'plain_text'"
+        content: |
           Format output in plain text:
           - Use simple headings with caps
           - No formatting markup
@@ -116,19 +120,19 @@ agents:
 ```yaml
 settings:
   - name: seo_mode
-    type: boolean
+    type: bool
     title: SEO Optimization
     description: Optimize content for search engines
     defaultValue: false
-  
+
   - name: include_images
-    type: boolean
+    type: bool
     title: Include Images
     description: Add image suggestions to content
     defaultValue: true
-  
+
   - name: fact_check
-    type: boolean
+    type: bool
     title: Fact Checking
     description: Verify claims against multiple sources
     defaultValue: false
@@ -138,20 +142,23 @@ settings:
 ```yaml
 content_writer:
   instructions:
-    - "settings.seo_mode": |
+    - if: "settings.seo_mode"
+      content: |
         Apply SEO optimization:
         - Target keyword in title and headings
         - Meta description under 160 chars
         - Internal linking opportunities
         - Image alt text
     
-    - "settings.include_images": |
+    - if: "settings.include_images"
+      content: |
         Suggest relevant images:
         - Describe ideal image for each section
         - Provide alt text
         - Note image placement
     
-    - "settings.fact_check": |
+    - if: "settings.fact_check"
+      content: |
         Fact-check all claims:
         - Search for authoritative sources
         - Cross-reference information
@@ -190,35 +197,40 @@ settings:
 assistant:
   instructions:
     # Tone variations
-    - "settings.tone == 'professional'": |
+    - if: "settings.tone == 'professional'"
+      content: |
         Professional tone:
         - Formal language
         - Third-person perspective
         - Industry terminology
         - Authoritative voice
     
-    - "settings.tone == 'conversational'": |
+    - if: "settings.tone == 'conversational'"
+      content: |
         Conversational tone:
         - Friendly, approachable
         - Second-person ("you")
         - Simple language
         - Relatable examples
     
-    - "settings.tone == 'friendly'": |
+    - if: "settings.tone == 'friendly'"
+      content: |
         Friendly tone:
         - Warm and welcoming
         - Personal touches
         - Encouraging language
         - Empathetic responses
     
-    - "settings.tone == 'academic'": |
+    - if: "settings.tone == 'academic'"
+      content: |
         Academic tone:
         - Scholarly language
         - Evidence-based
         - Formal citations
         - Objective analysis
     
-    - "settings.tone == 'humorous'": |
+    - if: "settings.tone == 'humorous'"
+      content: |
         Humorous tone:
         - Light and entertaining
         - Appropriate jokes
@@ -226,15 +238,18 @@ assistant:
         - Playful language
     
     # Length variations
-    - "settings.length == 'brief'": |
+    - if: "settings.length == 'brief'"
+      content: |
         Keep responses brief (1-2 paragraphs).
         Focus on essential information only.
     
-    - "settings.length == 'moderate'": |
+    - if: "settings.length == 'moderate'"
+      content: |
         Provide moderate detail (3-5 paragraphs).
         Include key points with some elaboration.
     
-    - "settings.length == 'detailed'": |
+    - if: "settings.length == 'detailed'"
+      content: |
         Provide comprehensive detail (6+ paragraphs).
         Include examples, context, and thorough explanations.
 ```
@@ -284,82 +299,78 @@ shopping_agent:
 
 ### Simple Conditions
 
-**Check if setting is true:**
+**Check if setting is true (implicit):**
 ```yaml
 instructions:
-  - "settings.expert_mode": |
+  - if: "settings.expert_mode"
+    content: |
+      Expert mode active - provide technical details
+```
+
+**Check if setting is true (explicit):**
+```yaml
+instructions:
+  - if: "settings.expert_mode == true"
+    content: |
       Expert mode active - provide technical details
 ```
 
 **Check if setting is false:**
 ```yaml
 instructions:
-  - "!settings.expert_mode": |
+  - if: "settings.expert_mode == false"
+    content: |
       Standard mode - use accessible language
 ```
 
-**Check string equality:**
+**String equality:**
 ```yaml
 instructions:
-  - "settings.format == 'json'": |
+  - if: "settings.format == \"json\""
+    content: |
       Output in JSON format
 ```
 
-**Check string inequality:**
+### Multiple Conditions Pattern
+
+Since logical operators (`&&`, `||`, `!`, `!=`) are **NOT supported**, use separate conditional blocks:
+
+**Instead of AND (expert AND verbose):**
 ```yaml
+# ❌ NOT SUPPORTED: settings.expert_mode && settings.verbose
+
+# ✅ CORRECT: Use two separate conditionals
 instructions:
-  - "settings.format != 'json'": |
-      Output in non-JSON format
+  - if: "settings.expert_mode == true"
+    content: |
+      Expert mode instructions
+
+  - if: "settings.verbose == true"
+    content: |
+      Verbose mode instructions
 ```
 
-### Complex Conditions
-
-**Multiple conditions (AND):**
+**Instead of OR (markdown OR html):**
 ```yaml
+# ❌ NOT SUPPORTED: settings.format == 'markdown' || settings.format == 'html'
+
+# ✅ CORRECT: Use separate conditionals for each case
 instructions:
-  - "settings.expert_mode && settings.verbose": |
-      Expert + Verbose: Provide comprehensive technical detail
+  - if: "settings.format == \"markdown\""
+    content: |
+      Use Markdown formatting
+
+  - if: "settings.format == \"html\""
+    content: |
+      Use HTML formatting
 ```
 
-**Multiple conditions (OR):**
-```yaml
-instructions:
-  - "settings.format == 'markdown' || settings.format == 'html'": |
-      Use markup formatting (either Markdown or HTML)
-```
+**Supported Operators:**
+- ✅ `==` (equality for booleans and strings)
+- ❌ `!=`, `>`, `<`, `>=`, `<=` (NOT supported)
+- ❌ `&&`, `||`, `!` (NOT supported)
 
-**Nested conditions:**
-```yaml
-instructions:
-  - "settings.expert_mode && (settings.format == 'json' || settings.format == 'yaml')": |
-      Expert mode with structured data output
-```
-
-**Negation with complex logic:**
-```yaml
-instructions:
-  - "!settings.simple_mode && settings.detail_level == 'high'": |
-      Advanced mode with high detail
-```
-
-### Setting Comparisons
-
-**Numeric comparisons:**
-```yaml
-instructions:
-  - "settings.max_results > 20": |
-      Large result set requested - include pagination info
-  
-  - "settings.price_limit < 50": |
-      Budget-conscious search - prioritize value options
-```
-
-**String matching:**
-```yaml
-instructions:
-  - "settings.tone == 'professional' || settings.tone == 'academic'": |
-      Formal writing style required
-```
+See [Conditional Instructions](../advanced/conditional-instructions.md) for more details.
 
 ## Common Setting Patterns
 
@@ -370,19 +381,19 @@ Enable/disable functionality:
 ```yaml
 settings:
   - name: enable_web_search
-    type: boolean
+    type: bool
     title: Enable Web Search
     description: Allow searching the web for current information
     defaultValue: true
-  
+
   - name: enable_notifications
-    type: boolean
+    type: bool
     title: Enable Notifications
     description: Send push notifications for updates
     defaultValue: false
-  
+
   - name: enable_memory
-    type: boolean
+    type: bool
     title: Enable Memory
     description: Remember preferences and context
     defaultValue: true
@@ -396,16 +407,19 @@ assistant:
     - notification-server
     - memory-server
   instructions:
-    - "settings.enable_web_search": |
+    - if: "settings.enable_web_search"
+      content: |
         Web search enabled - use duckduckgo for current information
     
     - "!settings.enable_web_search": |
         Web search disabled - use training data only
     
-    - "settings.enable_notifications": |
+    - if: "settings.enable_notifications"
+      content: |
         Send important updates via notification-server
     
-    - "settings.enable_memory": |
+    - if: "settings.enable_memory"
+      content: |
         Store user preferences and context in memory-server
     
     - |
@@ -462,18 +476,10 @@ meal_planner:
   toolsets:
     - product-catalog
   instructions:
-    - "settings.dietary_restrictions != 'none'": |
-        Filter all recipes and products by: {settings.dietary_restrictions}
-        Clearly label dietary attributes.
-        Verify ingredients meet restrictions.
-    
-    - "settings.allergies != 'none'": |
-        CRITICAL: Exclude all products containing: {settings.allergies}
-        Double-check ingredient lists.
-        Warn if allergen information unavailable.
-    
     - |
         Provide meal plans and shopping lists.
+        Check settings for dietary restrictions and allergies.
+        Filter recipes and products accordingly.
 ```
 
 ### Experience Level
@@ -482,23 +488,24 @@ Adjust complexity based on user expertise:
 
 ```yaml
 settings:
-  - key: experience_level
+  - name: experience_level
     type: string
-    label: Experience Level
+    title: Experience Level
     description: User's expertise in this domain
     allowed_values:
       - beginner
       - intermediate
       - advanced
       - expert
-    default_value: intermediate
+    defaultValue: intermediate
 ```
 
 **Agent usage:**
 ```yaml
 instructor:
   instructions:
-    - "settings.experience_level == 'beginner'": |
+    - if: "settings.experience_level == 'beginner'"
+      content: |
         Beginner level:
         - Define all technical terms
         - Start with fundamentals
@@ -506,21 +513,24 @@ instructor:
         - Include lots of examples
         - Avoid jargon
     
-    - "settings.experience_level == 'intermediate'": |
+    - if: "settings.experience_level == 'intermediate'"
+      content: |
         Intermediate level:
         - Assume basic knowledge
         - Focus on practical applications
         - Introduce advanced concepts gradually
         - Provide context and rationale
     
-    - "settings.experience_level == 'advanced'": |
+    - if: "settings.experience_level == 'advanced'"
+      content: |
         Advanced level:
         - Assume strong foundation
         - Focus on nuance and edge cases
         - Discuss trade-offs and alternatives
         - Reference best practices
     
-    - "settings.experience_level == 'expert'": |
+    - if: "settings.experience_level == 'expert'"
+      content: |
         Expert level:
         - Discuss advanced techniques
         - Debate architectural decisions
@@ -587,15 +597,19 @@ allowed_values:
 ```yaml
 instructions:
   # Tone settings
-  - "settings.tone == 'professional'": |
+  - if: "settings.tone == 'professional'"
+    content: |
       Professional tone instructions
-  - "settings.tone == 'casual'": |
+  - if: "settings.tone == 'casual'"
+    content: |
       Casual tone instructions
   
   # Format settings
-  - "settings.format == 'json'": |
+  - if: "settings.format == 'json'"
+    content: |
       JSON format instructions
-  - "settings.format == 'yaml'": |
+  - if: "settings.format == 'yaml'"
+    content: |
       YAML format instructions
   
   # Default
@@ -608,7 +622,8 @@ Always include a default instruction (empty condition):
 
 ```yaml
 instructions:
-  - "settings.expert_mode": |
+  - if: "settings.expert_mode"
+    content: |
       Expert instructions
   
   - |
@@ -621,20 +636,20 @@ instructions:
 ```yaml
 # Good - Constrained options
 settings:
-  - key: color
+  - name: color
     type: string
     allowed_values:
       - red
       - blue
       - green
-    default_value: blue
+    defaultValue: blue
 
 # Bad - No constraints
 settings:
-  - key: color
+  - name: color
     type: string
     # User can enter anything
-    default_value: blue
+    defaultValue: blue
 ```
 
 **Set reasonable ranges for numbers:**
@@ -656,17 +671,17 @@ Settings that affect each other:
 
 ```yaml
 settings:
-  - key: research_mode
-    type: boolean
-    label: Research Mode
+  - name: research_mode
+    type: bool
+    title: Research Mode
     description: Conduct thorough research before responding
-    default_value: false
-  
-  - key: max_sources
+    defaultValue: false
+
+  - name: max_sources
     type: number
-    label: Maximum Sources
+    title: Maximum Sources
     description: Number of sources to check (research mode only)
-    default_value: 5
+    defaultValue: 5
 ```
 
 **Agent usage:**
@@ -675,7 +690,8 @@ researcher:
   toolsets:
     - duckduckgo
   instructions:
-    - "settings.research_mode": |
+    - if: "settings.research_mode"
+      content: |
         RESEARCH MODE ACTIVE
         - Search up to {settings.max_sources} sources
         - Cross-reference information
@@ -692,28 +708,29 @@ Settings that change based on context:
 
 ```yaml
 settings:
-  - key: auto_mode
-    type: boolean
-    label: Auto Mode
+  - name: auto_mode
+    type: bool
+    title: Auto Mode
     description: Automatically adjust settings based on request
-    default_value: false
-  
-  - key: detail_level
+    defaultValue: false
+
+  - name: detail_level
     type: string
-    label: Detail Level
+    title: Detail Level
     description: Response detail level (ignored in auto mode)
     allowed_values:
       - brief
       - normal
       - detailed
-    default_value: normal
+    defaultValue: normal
 ```
 
 **Agent usage:**
 ```yaml
 adaptive_assistant:
   instructions:
-    - "settings.auto_mode": |
+    - if: "settings.auto_mode"
+      content: |
         AUTO MODE
         - Detect request complexity
         - Adjust detail level automatically:
@@ -737,23 +754,24 @@ Predefined combinations of settings:
 
 ```yaml
 settings:
-  - key: profile
+  - name: profile
     type: string
-    label: User Profile
+    title: User Profile
     description: Predefined setting combinations
     allowed_values:
       - student
       - professional
       - researcher
       - casual
-    default_value: casual
+    defaultValue: casual
 ```
 
 **Agent usage:**
 ```yaml
 assistant:
   instructions:
-    - "settings.profile == 'student'": |
+    - if: "settings.profile == 'student'"
+      content: |
         STUDENT PROFILE
         - Educational tone
         - Detailed explanations
@@ -761,7 +779,8 @@ assistant:
         - Cite sources
         - Avoid jargon
     
-    - "settings.profile == 'professional'": |
+    - if: "settings.profile == 'professional'"
+      content: |
         PROFESSIONAL PROFILE
         - Business-focused
         - Concise and efficient
@@ -769,7 +788,8 @@ assistant:
         - Actionable insights
         - Data-driven
     
-    - "settings.profile == 'researcher'": |
+    - if: "settings.profile == 'researcher'"
+      content: |
         RESEARCHER PROFILE
         - Academic rigor
         - Comprehensive citations
@@ -777,7 +797,8 @@ assistant:
         - Thorough analysis
         - Primary sources preferred
     
-    - "settings.profile == 'casual'": |
+    - if: "settings.profile == 'casual'"
+      content: |
         CASUAL PROFILE
         - Friendly tone
         - Conversational style

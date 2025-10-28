@@ -116,7 +116,7 @@ settings:
     type: bool
     description: Use formal, professional language
     defaultValue: false
-  
+
   - name: responseLength
     title: Response Length
     type: string
@@ -133,16 +133,16 @@ agents:
         You are a friendly AI assistant. Keep responses conversational and approachable.
       
       - if: "settings.formalMode == true"
-        "": |
+        content: |
           COMMUNICATION STYLE: Use formal, professional language. 
           Address users respectfully and maintain business-appropriate tone.
       
       - if: "settings.responseLength == \"brief\""
-        "": |
+        content: |
           RESPONSE LENGTH: Keep responses very brief, typically 1-2 sentences.
       
       - if: "settings.responseLength == \"detailed\""
-        "": |
+        content: |
           RESPONSE LENGTH: Provide detailed, comprehensive responses with examples and explanations.
     
     toolsets:

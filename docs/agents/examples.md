@@ -115,9 +115,9 @@ settings:
     title: Dietary Restrictions
     description: Filter products by dietary needs
     defaultValue: none
-  
+
   - name: budget_conscious
-    type: boolean
+    type: bool
     title: Budget Mode
     description: Prioritize value and deals
     defaultValue: false
@@ -148,11 +148,8 @@ agents:
     name: Product Specialist
     description: Finds and recommends products
     instructions:
-      - "settings.dietary_restrictions != 'none'": |
-          Filter all products by dietary restriction: {settings.dietary_restrictions}
-          Clearly label dietary attributes on recommendations.
-      
-      - "settings.budget_conscious": |
+      - if: "settings.budget_conscious"
+        content: |
           Prioritize value and deals:
           - Sort by price per unit
           - Highlight sale items
@@ -179,10 +176,6 @@ agents:
     name: Meal Planner
     description: Creates meal plans and shopping lists
     instructions:
-      - "settings.dietary_restrictions != 'none'": |
-          Create meal plans for: {settings.dietary_restrictions}
-          Ensure all ingredients and recipes comply.
-      
       - |
         Create meal plans based on:
           - Number of servings needed
@@ -232,9 +225,6 @@ agents:
     name: Recipe Specialist
     description: Finds and suggests recipes
     instructions:
-      - "settings.dietary_restrictions != 'none'": |
-          Only suggest recipes for: {settings.dietary_restrictions}
-      
       - |
         Help users find recipes based on:
           - Available ingredients
@@ -280,7 +270,7 @@ default_agent: project_coordinator
 
 settings:
   - name: seo_mode
-    type: boolean
+    type: bool
     title: SEO Optimization
     description: Optimize content for search engines
     defaultValue: true
@@ -363,28 +353,32 @@ agents:
     description: Creates initial content draft
     model: anthropic
     instructions:
-      - "settings.tone == 'professional'": |
+      - if: "settings.tone == 'professional'"
+        content: |
           Write in a professional tone:
           - Formal, authoritative language
           - Industry terminology
           - Third-person perspective
           - Data-driven arguments
       
-      - "settings.tone == 'conversational'": |
+      - if: "settings.tone == 'conversational'"
+        content: |
           Write in a conversational tone:
           - Friendly, approachable language
           - Second-person perspective ("you")
           - Relatable examples and stories
           - Engaging, accessible style
       
-      - "settings.tone == 'academic'": |
+      - if: "settings.tone == 'academic'"
+        content: |
           Write in an academic tone:
           - Scholarly, formal language
           - Proper citations and references
           - Objective, analytical approach
           - Evidence-based reasoning
       
-      - "settings.seo_mode": |
+      - if: "settings.seo_mode"
+        content: |
           Apply SEO best practices:
           - Identify target keyword from topic
           - Use keyword in title, headers, and throughout (1-2% density)
@@ -480,7 +474,8 @@ agents:
     description: Creates platform-optimized social media content
     model: gpt-4o
     instructions:
-      - "settings.platform == 'twitter'": |
+      - if: "settings.platform == 'twitter'"
+        content: |
           Create content for Twitter/X:
           - Maximum 280 characters
           - Use 1-2 relevant hashtags
@@ -488,7 +483,8 @@ agents:
           - Engaging hook in first sentence
           - Include call-to-action when appropriate
       
-      - "settings.platform == 'linkedin'": |
+      - if: "settings.platform == 'linkedin'"
+        content: |
           Create content for LinkedIn:
           - Professional tone
           - Longer-form content (1300-1500 chars optimal)
@@ -497,7 +493,8 @@ agents:
           - 3-5 relevant hashtags
           - End with question to drive engagement
       
-      - "settings.platform == 'facebook'": |
+      - if: "settings.platform == 'facebook'"
+        content: |
           Create content for Facebook:
           - Conversational, community-focused
           - Optimal length: 40-80 characters (or longer storytelling)
@@ -505,7 +502,8 @@ agents:
           - Use emojis sparingly
           - Include relevant link or call-to-action
       
-      - "settings.platform == 'instagram'": |
+      - if: "settings.platform == 'instagram'"
+        content: |
           Create content for Instagram:
           - Visual-first approach (note image requirements)
           - Caption: engaging hook in first line
@@ -513,28 +511,32 @@ agents:
           - 10-15 relevant hashtags (mix of popular and niche)
           - Clear call-to-action
       
-      - "settings.brand_voice == 'professional'": |
+      - if: "settings.brand_voice == 'professional'"
+        content: |
           Brand voice: Professional
           - Authoritative and credible
           - Industry terminology
           - Data and insights
           - Polished and refined
       
-      - "settings.brand_voice == 'friendly'": |
+      - if: "settings.brand_voice == 'friendly'"
+        content: |
           Brand voice: Friendly
           - Warm and approachable
           - Conversational language
           - Personal touches
           - Relatable and authentic
       
-      - "settings.brand_voice == 'humorous'": |
+      - if: "settings.brand_voice == 'humorous'"
+        content: |
           Brand voice: Humorous
           - Witty and entertaining
           - Light-hearted tone
           - Clever wordplay
           - Fun and engaging
       
-      - "settings.brand_voice == 'inspirational'": |
+      - if: "settings.brand_voice == 'inspirational'"
+        content: |
           Brand voice: Inspirational
           - Motivating and uplifting
           - Aspirational messaging
@@ -577,7 +579,7 @@ default_agent: support_coordinator
 
 settings:
   - name: priority_mode
-    type: boolean
+    type: bool
     title: Priority Mode
     description: Fast-track urgent requests
     defaultValue: false
@@ -588,7 +590,8 @@ agents:
     name: Support Coordinator
     description: Routes tickets to appropriate specialists
     instructions:
-      - "settings.priority_mode": |
+      - if: "settings.priority_mode"
+        content: |
           PRIORITY MODE ACTIVE
           - Respond immediately
           - Escalate complex issues quickly
@@ -618,7 +621,8 @@ agents:
     description: Handles technical issues and bugs
     model: gpt-4o
     instructions:
-      - "settings.priority_mode": |
+      - if: "settings.priority_mode"
+        content: |
           Priority technical support:
           - Immediate acknowledgment
           - Rapid diagnosis
@@ -743,9 +747,9 @@ settings:
     title: Report Type
     description: Type of business report to generate
     defaultValue: sales
-  
+
   - name: include_recommendations
-    type: boolean
+    type: bool
     title: Include Recommendations
     description: Add strategic recommendations section
     defaultValue: true
@@ -773,7 +777,8 @@ agents:
     name: Data Collector
     description: Collects and validates source data
     instructions:
-      - "settings.report_type == 'sales'": |
+      - if: "settings.report_type == 'sales'"
+        content: |
           Collect sales data:
           - Revenue by product/service
           - Sales by region
@@ -781,7 +786,8 @@ agents:
           - Sales team performance
           - Period-over-period comparisons
       
-      - "settings.report_type == 'marketing'": |
+      - if: "settings.report_type == 'marketing'"
+        content: |
           Collect marketing data:
           - Campaign performance
           - Lead generation metrics
@@ -789,7 +795,8 @@ agents:
           - ROI by channel
           - Brand awareness metrics
       
-      - "settings.report_type == 'operations'": |
+      - if: "settings.report_type == 'operations'"
+        content: |
           Collect operations data:
           - Efficiency metrics
           - Resource utilization
@@ -797,7 +804,8 @@ agents:
           - Quality metrics
           - Bottlenecks and delays
       
-      - "settings.report_type == 'financial'": |
+      - if: "settings.report_type == 'financial'"
+        content: |
           Collect financial data:
           - Revenue and expenses
           - Profit margins
@@ -865,7 +873,8 @@ agents:
     description: Writes executive summary
     model: anthropic
     instructions:
-      - "settings.include_recommendations": |
+      - if: "settings.include_recommendations"
+        content: |
           Create comprehensive executive summary with recommendations:
           
           Structure:
@@ -1046,14 +1055,14 @@ instructions:
 Extend with your own configuration:
 ```yaml
 settings:
-  - key: your_custom_setting
+  - name: your_custom_setting
     type: string
-    label: Your Setting
+    title: Your Setting
     description: What it controls
     allowed_values:
       - option1
       - option2
-    default_value: option1
+    defaultValue: option1
 ```
 
 ### Change Tools

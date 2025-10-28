@@ -70,7 +70,7 @@ theme:
     # - navigation.tabs           # Top-level tabs
     # - navigation.tabs.sticky    # Sticky tabs
     - navigation.sections       # Section navigation
-    - navigation.expand         # Expand all sections
+    #- navigation.expand         # Expand all sections
     - navigation.indexes        # Section index pages
     - navigation.top            # Back to top button
     - navigation.footer         # Previous/next footer

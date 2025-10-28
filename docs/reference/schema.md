@@ -14,7 +14,7 @@ default_agent: agent_name             # Required: Entry point agent
 
 settings:                             # Optional: User settings
   - name: setting_name                # Required: Setting identifier
-    type: boolean | string | number   # Required: Data type
+    type: bool | string | number      # Required: Data type (use "bool" not "boolean")
     title: Display Label              # Required: UI label
     description: Setting description   # Required: Help text
     defaultValue: value               # Required: Default value
@@ -182,7 +182,7 @@ Runtime configuration options accessible via conditional instructions.
 ```yaml
 settings:
   - name: string                      # Required: Unique identifier
-    type: boolean | string | number   # Required: Data type
+    type: bool | string | number      # Required: Data type (use "bool" not "boolean")
     title: string                     # Required: UI display label
     description: string               # Required: Help text
     defaultValue: value               # Required: Must match type
@@ -204,7 +204,7 @@ settings:
 ```yaml
 settings:
   - name: verbose_mode
-    type: boolean
+    type: bool
     title: Verbose Output
     description: Include detailed explanations in responses
     defaultValue: false
@@ -422,9 +422,9 @@ instructions:
 ```
 
 **Rules:**
-- Must have at least one instruction with empty string `""` condition (default)
+- Must have at least one plain string instruction (no `if` condition) as default
 - Instructions evaluated in order from top to bottom
-- First matching condition wins
+- All matching conditions are included and concatenated
 - Use `|` for multiline strings
 
 **Condition Syntax:**
@@ -466,24 +466,25 @@ instructions:
 **Conditional:**
 ```yaml
 instructions:
-  - "settings.expert_mode": |
+  - if: "settings.expert_mode"
+    content: |
       Expert mode: Provide technical details and advanced concepts.
   
   - |
       Standard mode: Use accessible language and explain clearly.
 ```
 
-**Multiple conditions:**
+**Multiple conditions (use separate blocks):**
 ```yaml
+# Note: && operator is NOT supported, use separate conditionals
 instructions:
-  - "settings.mode == 'expert' && settings.verbose": |
-      Expert + Verbose: Comprehensive technical detail
-  
-  - "settings.mode == 'expert'": |
-      Expert: Technical focus, concise
-  
-  - "settings.verbose": |
-      Verbose: Detailed explanations, standard level
+  - if: "settings.mode == \"expert\""
+    content: |
+      Expert: Technical focus
+
+  - if: "settings.verbose"
+    content: |
+      Verbose: Detailed explanations
   
   - |
       Standard: Balanced responses
@@ -523,6 +524,8 @@ coordinator:
     - specialist_2
     - specialist_3
 ```
+
+> **Note:** When an LLM agent has `sub_agents` defined, the system **automatically appends** the `<SubAgents />` data tag to the agent's instructions at runtime. This tag expands to include detailed information about each sub-agent (name, description, and instruction preview), helping the coordinator make informed delegation decisions. You don't need to manually include this tag unless you want to customize its placement in your instructions.
 
 **Parallel agent (required, 2+):**
 ```yaml
@@ -667,21 +670,21 @@ interactive: true
 default_agent: coordinator
 
 settings:
-  - key: priority_mode
-    type: boolean
-    label: Priority Mode
+  - name: priority_mode
+    type: bool
+    title: Priority Mode
     description: Fast-track urgent requests
-    default_value: false
+    defaultValue: false
   
-  - key: response_style
+  - name: response_style
     type: string
-    label: Response Style
+    title: Response Style
     description: Communication tone
     allowed_values:
       - professional
       - friendly
       - casual
-    default_value: friendly
+    defaultValue: friendly
 
 agents:
   coordinator:
@@ -690,7 +693,8 @@ agents:
     description: Routes tickets to appropriate specialists
     model: gpt-4o
     instructions:
-      - "settings.priority_mode": |
+      - if: "settings.priority_mode"
+        content: |
           PRIORITY MODE ACTIVE
           - Respond immediately
           - Escalate if needed
@@ -714,19 +718,22 @@ agents:
     description: Handles technical issues and bugs
     model: gpt-4o
     instructions:
-      - "settings.response_style == 'professional'": |
+      - if: "settings.response_style == 'professional'"
+        content: |
           Professional tone:
           - Formal language
           - "Thank you for contacting technical support"
           - "I will assist you with this technical issue"
       
-      - "settings.response_style == 'friendly'": |
+      - if: "settings.response_style == 'friendly'"
+        content: |
           Friendly tone:
           - Warm and approachable
           - "Hi! I'm happy to help with that technical issue"
           - "Let me help you get this resolved"
       
-      - "settings.response_style == 'casual'": |
+      - if: "settings.response_style == 'casual'"
+        content: |
           Casual tone:
           - Relaxed and conversational
           - "Hey! Let's figure out what's going on"

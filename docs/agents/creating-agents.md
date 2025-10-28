@@ -167,11 +167,11 @@ Runtime configuration options accessible to agents.
 ```yaml
 settings:
   - name: verbose_mode
-    type: boolean
+    type: bool
     title: Verbose Output
     description: Include detailed explanations
     defaultValue: false
-  
+
   - name: temperature_unit
     type: string
     title: Temperature Unit
@@ -193,7 +193,7 @@ default_agent: coordinator
 
 settings:
   - name: priority_mode
-    type: boolean
+    type: bool
     title: Priority Mode
     description: Fast-track urgent requests
     defaultValue: false
@@ -381,7 +381,8 @@ instructions:
 **With Conditional Logic:**
 ```yaml
 instructions:
-  - "settings.expert_mode": |
+  - if: "settings.expert_mode"
+    content: |
       You are in expert mode. Provide:
       - Technical details and internals
       - Advanced configuration options
@@ -465,7 +466,8 @@ content_writer:
   description: Creates SEO-optimized blog posts
   model: anthropic
   instructions:
-    - "settings.seo_mode": |
+    - if: "settings.seo_mode"
+      content: |
         Create SEO-optimized content with:
         - Target keyword integration (5-7 mentions)
         - Meta description under 160 characters

@@ -176,7 +176,7 @@ Defines runtime configuration options accessible to agents via conditional instr
 ```yaml
 settings:
   - name: expert_mode
-    type: boolean
+    type: bool
     title: Expert Mode
     description: Show advanced technical details
     defaultValue: false
@@ -209,7 +209,7 @@ settings:
 **Boolean Settings:**
 ```yaml
 - name: verbose_mode
-  type: boolean
+  type: bool
   title: Verbose Output
   description: Include detailed explanations and reasoning
   defaultValue: false
@@ -445,13 +445,15 @@ agents:
 agents:
   support_agent:
     instructions:
-      - "settings.expert_mode": |
+      - if: "settings.expert_mode"
+        content: |
           You are in expert mode. Provide:
           - Technical details and internals
           - Advanced configuration options
           - API references and code examples
       
-      - "settings.priority_mode": |
+      - if: "settings.priority_mode"
+        content: |
           This is a priority support request.
           - Respond immediately
           - Escalate if needed
@@ -466,35 +468,45 @@ agents:
 
 #### Instruction Object Structure
 
-Each instruction has:
-- **Condition** (key): Expression to evaluate (empty string `""` for default)
-- **Content** (value): Instruction text (use `|` for multiline)
+Each instruction can be:
+- **Plain string**: Default instruction (always included)
+- **Conditional object**: Has `if` property (condition) and `content` property (instruction text)
 
 #### Condition Syntax
 
-**Simple boolean:**
+**Boolean check (implicit truthiness):**
 ```yaml
-- "settings.verbose_mode": Instructions when true
+- if: "settings.verbose_mode"
+  content: |
+    Instructions when verbose_mode is true
 ```
 
-**Negation:**
+**Explicit boolean equality:**
 ```yaml
-- "!settings.expert_mode": Instructions when false
+- if: "settings.expert_mode == true"
+  content: |
+    Instructions when expert mode is enabled
+
+- if: "settings.expert_mode == false"
+  content: |
+    Instructions when expert mode is disabled
 ```
 
-**Equality:**
+**String equality:**
 ```yaml
-- "settings.format == 'json'": Instructions for JSON format
+- if: "settings.format == \"json\""
+  content: |
+    Instructions for JSON format
 ```
 
-**Logical operators:**
-```yaml
-- "settings.priority && settings.expert_mode": High priority expert instructions
+**Note:** The schema does NOT support:
+- ❌ Negation (`!settings.property`)
+- ❌ Logical operators (`&&`, `||`)
+- ❌ Comparison operators (`>`, `<`, `!=`)
 
-- "settings.format == 'markdown' || settings.format == 'html'": Markup format instructions
-```
+Use separate conditional blocks for each condition instead.
 
-See [Conditional Instructions](../advanced/conditional-instructions.md) for advanced patterns.
+See [Conditional Instructions](../advanced/conditional-instructions.md) for more patterns.
 
 #### Best Practices
 
@@ -704,7 +716,7 @@ default_agent: project_manager
 
 settings:
   - name: seo_mode
-    type: boolean
+    type: bool
     title: SEO Optimization
     description: Optimize content for search engines
     defaultValue: false
@@ -816,28 +828,32 @@ agents:
     description: Creates initial content draft
     model: anthropic
     instructions:
-      - "settings.tone == 'professional'": |
+      - if: "settings.tone == 'professional'"
+        content: |
           Write in a professional tone:
           - Formal language
           - Authoritative voice
           - Industry terminology
           - Data-driven arguments
       
-      - "settings.tone == 'conversational'": |
+      - if: "settings.tone == 'conversational'"
+        content: |
           Write in a conversational tone:
           - Friendly, approachable language
           - Second-person perspective
           - Relatable examples
           - Engaging storytelling
       
-      - "settings.tone == 'academic'": |
+      - if: "settings.tone == 'academic'"
+        content: |
           Write in an academic tone:
           - Scholarly language
           - Evidence-based reasoning
           - Proper citations
           - Objective analysis
       
-      - "settings.tone == 'casual'": |
+      - if: "settings.tone == 'casual'"
+        content: |
           Write in a casual tone:
           - Relaxed, informal language
           - Personal anecdotes
@@ -859,7 +875,8 @@ agents:
     description: Optimizes content for search engines
     model: gpt-4o
     instructions:
-      - "settings.seo_mode": |
+      - if: "settings.seo_mode"
+        content: |
           Enhance content for SEO:
           - Identify target keyword
           - Optimize title and headings
@@ -916,8 +933,8 @@ agents:
 
 | Rule | Description |
 |------|-------------|
-| Default required | Must have at least one instruction with empty string `""` condition |
-| Valid conditions | Conditions must be valid expressions |
+| Default required | Must have at least one plain string instruction (no `if` condition) |
+| Valid conditions | Conditions must match pattern `settings.property` or `settings.property == value` |
 | Setting references | Settings referenced in conditions must exist in team `settings` |
 | Non-empty | Instruction content cannot be empty |
 

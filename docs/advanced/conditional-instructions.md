@@ -17,7 +17,7 @@ Dynamic agent behavior using conditional logic based on settings.
 ```yaml
 instructions:
   - if: "settings.setting_name == value"
-    "": |
+    content: |
       Instructions when condition is true
   - |
     Default instructions (always included)
@@ -30,7 +30,7 @@ agents:
   assistant:
     instructions:
       - if: "settings.expert_mode == true"
-        "": |
+        content: |
           You are in expert mode. Provide technical details,
           use industry terminology, and include advanced concepts.
       
@@ -47,7 +47,7 @@ agents:
 ```yaml
 instructions:
   - if: "settings.verbose == true"
-    "": |
+    content: |
       Verbose mode active - provide detailed explanations
 ```
 
@@ -55,11 +55,11 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.verbose == false"
-    "": |
+    content: |
       Concise mode - keep responses brief
 ```
 
-**Note:** The empty string key `""` is required when using `if` conditions.
+**Note:** The `content` property holds the instruction text when using `if` conditions.
 
 ### String Settings
 
@@ -67,7 +67,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.format == \"json\""
-    "": |
+    content: |
       Output in JSON format
 ```
 
@@ -87,7 +87,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.verbose == true"
-    "": |
+    content: |
       Verbose instructions
   
   - |
@@ -108,7 +108,7 @@ instructions:
     Default instructions (base behavior)
   
   - if: "settings.expert_mode == true"
-    "": |
+    content: |
       Additional expert instructions
 ```
 
@@ -128,7 +128,7 @@ agents:
   instructor:
     instructions:
       - if: "settings.mode == \"beginner\""
-        "": |
+        content: |
           BEGINNER MODE
           - Define all terms
           - Start with basics
@@ -137,7 +137,7 @@ agents:
           - Avoid jargon
       
       - if: "settings.mode == \"intermediate\""
-        "": |
+        content: |
           INTERMEDIATE MODE
           - Assume basic knowledge
           - Practical focus
@@ -145,7 +145,7 @@ agents:
           - Balanced explanations
       
       - if: "settings.mode == \"expert\""
-        "": |
+        content: |
           EXPERT MODE
           - Advanced concepts
           - Technical terminology
@@ -161,13 +161,13 @@ agents:
 ```yaml
 settings:
   - name: enable_web_search
-    type: boolean
+    type: bool
     title: Enable Web Search
     description: Allow searching the web for current information
     defaultValue: true
-  
+
   - name: enable_memory
-    type: boolean
+    type: bool
     title: Enable Memory
     description: Store and retrieve context from memory
     defaultValue: true
@@ -183,13 +183,13 @@ agents:
         - Answer questions using training data
       
       - if: "settings.enable_web_search == true"
-        "": |
+        content: |
           Web search enabled:
           - Use web search for current information
           - Include sources in responses
       
       - if: "settings.enable_memory == true"
-        "": |
+        content: |
           Memory enabled:
           - Store important findings for future reference
           - Retrieve relevant context from previous interactions
@@ -210,7 +210,7 @@ agents:
   formatter:
     instructions:
       - if: "settings.output_format == \"markdown\""
-        "": |
+        content: |
           Format in Markdown:
           - Use # for headings
           - Use **bold** and *italic*
@@ -218,7 +218,7 @@ agents:
           - Use ``` for code blocks
       
       - if: "settings.output_format == \"json\""
-        "": |
+        content: |
           Format as JSON:
           - Valid JSON syntax
           - Proper escaping
@@ -226,7 +226,7 @@ agents:
           - Include structure: {"title": "...", "content": "..."}
       
       - if: "settings.output_format == \"html\""
-        "": |
+        content: |
           Format as HTML:
           - Use semantic tags
           - Proper nesting
@@ -250,21 +250,21 @@ agents:
   customer_service:
     instructions:
       - if: "settings.tone == \"professional\""
-        "": |
+        content: |
           Professional tone:
           - "Thank you for contacting us"
           - "I'd be happy to assist you with..."
           - Use proper grammar and formal language
       
       - if: "settings.tone == \"friendly\""
-        "": |
+        content: |
           Friendly tone:
           - "Hi there! How can I help?"
           - "I'm happy to help you with that!"
           - Warm and approachable
       
       - if: "settings.tone == \"casual\""
-        "": |
+        content: |
           Casual tone:
           - "Hey! What's up?"
           - "Sure thing! Let me help you out"
@@ -290,7 +290,7 @@ agents:
       - notification-server
     instructions:
       - if: "settings.priority == \"urgent\""
-        "": |
+        content: |
           🚨 URGENT PRIORITY
           - Respond immediately
           - Escalate to senior team if needed
@@ -298,20 +298,20 @@ agents:
           - Follow up within 15 minutes
       
       - if: "settings.priority == \"high\""
-        "": |
+        content: |
           ⚡ HIGH PRIORITY
           - Prioritize this request
           - Respond within 1 hour
           - Notify relevant team members
       
       - if: "settings.priority == \"normal\""
-        "": |
+        content: |
           📋 NORMAL PRIORITY
           - Standard response time (within 4 hours)
           - Follow normal procedures
       
       - if: "settings.priority == \"low\""
-        "": |
+        content: |
           📌 LOW PRIORITY
           - Process when time allows
           - Standard response within 24 hours
@@ -329,19 +329,19 @@ Build up capabilities with multiple feature flags:
 ```yaml
 settings:
   - name: enable_search
-    type: boolean
+    type: bool
     title: Enable Search
     description: Enable web search capabilities
     defaultValue: true
-  
+
   - name: enable_memory
-    type: boolean
+    type: bool
     title: Enable Memory
     description: Enable persistent memory
     defaultValue: true
-  
+
   - name: enable_notifications
-    type: boolean
+    type: bool
     title: Enable Notifications
     description: Enable push notifications
     defaultValue: false
@@ -358,20 +358,20 @@ agents:
           - Answer questions using training data
       
       - if: "settings.enable_search == true"
-        "": |
+        content: |
           Search capability enabled:
           - Use web search for current information
           - Cite sources
       
       - if: "settings.enable_memory == true"
-        "": |
+        content: |
           Memory capability enabled:
           - Store important context
           - Retrieve relevant history
           - Build knowledge over time
       
       - if: "settings.enable_notifications == true"
-        "": |
+        content: |
           Notification capability enabled:
           - Send notifications for important updates
           - Alert user of completed tasks
@@ -402,35 +402,35 @@ agents:
           Base instructions for all users
       
       - if: "settings.user_type == \"student\""
-        "": |
+        content: |
           Student context:
           - Educational focus
           - Define technical terms
           - Include learning resources
       
       - if: "settings.user_type == \"professional\""
-        "": |
+        content: |
           Professional context:
           - Business implications
           - Practical applications
           - ROI considerations
       
       - if: "settings.user_type == \"researcher\""
-        "": |
+        content: |
           Researcher context:
           - Academic rigor
           - Methodology details
           - Citations and references
       
       - if: "settings.detail_level == \"brief\""
-        "": |
+        content: |
           Brief mode:
           - Concise responses
           - Key points only
           - Executive summary style
       
       - if: "settings.detail_level == \"detailed\""
-        "": |
+        content: |
           Detailed mode:
           - Comprehensive explanations
           - In-depth analysis
@@ -459,14 +459,14 @@ agents:
           Information retrieval agent
       
       - if: "settings.data_source == \"web_only\""
-        "": |
+        content: |
           Web-only mode:
           - Use duckduckgo for all queries
           - Do not use memory-server
           - Fresh data every time
       
       - if: "settings.data_source == \"memory_only\""
-        "": |
+        content: |
           Memory-only mode:
           - Search memory-server only
           - Do not use web search
@@ -474,7 +474,7 @@ agents:
           - Inform user if data not in memory
       
       - if: "settings.data_source == \"web_and_memory\""
-        "": |
+        content: |
           Combined mode:
           1. Check memory-server for cached data first
           2. If cache miss, search web via duckduckgo
@@ -482,7 +482,7 @@ agents:
           4. Return comprehensive results
       
       - if: "settings.data_source == \"offline\""
-        "": |
+        content: |
           Offline mode:
           - Use training data only
           - No external tools
@@ -497,7 +497,7 @@ agents:
 ```yaml
 instructions:
   - if: "settings.mode == \"expert\""
-    "": |
+    content: |
       Expert mode instructions
 ```
 
@@ -505,7 +505,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.m == \"e\""
-    "": |
+    content: |
       Unclear what this checks
 ```
 
@@ -515,7 +515,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.expert_mode == true"
-    "": |
+    content: |
       Expert instructions
   
   - |
@@ -526,7 +526,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.expert_mode == true"
-    "": |
+    content: |
       Expert instructions
   
   # No default! What happens in standard mode?
@@ -538,11 +538,11 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.expert_mode == true"
-    "": |
+    content: |
       Clear, simple condition
   
   - if: "settings.format == \"json\""
-    "": |
+    content: |
       Clear equality check
 ```
 
@@ -561,7 +561,7 @@ agents:
     instructions:
       # High priority = Immediate detailed response
       - if: "settings.priority == \"high\""
-        "": |
+        content: |
           High priority request - provide immediate response
       
       # Default = Standard response
@@ -586,10 +586,10 @@ agents:
   assistant:
     instructions:
       - if: "settings.mode == \"advanced\""
-        "": |
+        content: |
           Advanced instructions
       - if: "settings.mode == \"simple\""
-        "": |
+        content: |
           Simple instructions
       - |
           Standard instructions
@@ -608,7 +608,7 @@ agents:
 ```yaml
 instructions:
   - if: "settings.expert_mode == true"
-    "": |
+    content: |
       Expert instructions
   # No default!
 ```
@@ -617,7 +617,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.expert_mode == true"
-    "": |
+    content: |
       Expert instructions
   - |
       Standard instructions (default)
@@ -629,7 +629,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.format = \"json\""
-    "": |
+    content: |
       Single = is assignment, not comparison!
 ```
 
@@ -637,7 +637,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.format == \"json\""
-    "": |
+    content: |
       Double == for equality check
 ```
 
@@ -647,10 +647,10 @@ instructions:
 ```yaml
 instructions:
   - if: "!settings.verbose"
-    "": |
+    content: |
       Negation not supported!
   - if: "settings.a && settings.b"
-    "": |
+    content: |
       Logical operators not supported!
 ```
 
@@ -658,7 +658,7 @@ instructions:
 ```yaml
 instructions:
   - if: "settings.verbose == true"
-    "": |
+    content: |
       Verbose instructions
   - |
       Non-verbose behavior in default

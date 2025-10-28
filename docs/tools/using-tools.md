@@ -512,7 +512,8 @@ adaptive_assistant:
     - duckduckgo
     - memory-server
   instructions:
-    - "settings.research_mode": |
+    - if: "settings.research_mode"
+      content: |
         RESEARCH MODE ACTIVE
         
         - Use duckduckgo liberally for fact-checking

@@ -12,6 +12,93 @@ Complex workflows using multiple specialized agents working together.
 - 🔁 **Sequential Pipelines** - Ordered processing through stages
 - 🌳 **Hierarchical Organization** - Multi-level coordination
 
+## Sub-Agent Discovery
+
+When an LLM agent has `sub_agents` defined, the system **automatically provides** information about available sub-agents in the agent's instructions. This happens through the `<SubAgents />` data tag, which is auto-appended at runtime.
+
+### Automatic Behavior
+
+You don't need to manually add the `<SubAgents />` tag to your instructions. The system automatically:
+
+1. **Detects** when an agent has the `sub_agents` property
+2. **Appends** the `<SubAgents />` data tag to the agent's instructions
+3. **Expands** the tag at runtime with detailed information about each sub-agent
+
+### What Gets Included
+
+The expanded `<SubAgents />` tag provides:
+
+- **Name** - The sub-agent's identifier
+- **Description** - What the sub-agent does
+- **Instructions** (preview) - First 200 characters of the sub-agent's instructions
+
+This information helps the coordinator agent understand which sub-agent to delegate to.
+
+### Example
+
+Given this agent definition:
+
+```yaml
+agents:
+  coordinator:
+    name: coordinator
+    description: Routes requests to specialists
+    instructions:
+      - |
+        You are a coordinator. Analyze requests and delegate to the appropriate specialist.
+    sub_agents:
+      - technical_support
+      - billing_support
+
+  technical_support:
+    name: technical_support
+    description: Handles technical issues
+    instructions:
+      - |
+        Diagnose and resolve technical problems.
+        Provide step-by-step solutions.
+
+  billing_support:
+    name: billing_support
+    description: Handles billing inquiries
+    instructions:
+      - |
+        Address billing questions and process refunds.
+```
+
+The coordinator agent automatically receives expanded instructions like:
+
+```
+You are a coordinator. Analyze requests and delegate to the appropriate specialist.
+
+Available Sub-Agents:
+- technical_support: Handles technical issues
+  Instructions: Diagnose and resolve technical problems. Provide step-by-step solutions.
+
+- billing_support: Handles billing inquiries
+  Instructions: Address billing questions and process refunds.
+```
+
+### Manual Override
+
+If you want to customize the sub-agent information, you can manually include `<SubAgents />` in your instructions. The system will detect the existing tag and won't duplicate it.
+
+```yaml
+coordinator:
+  instructions:
+    - |
+      You are a coordinator.
+
+      <SubAgents />
+
+      Use the transfer_task tool to delegate work.
+  sub_agents:
+    - specialist_a
+    - specialist_b
+```
+
+---
+
 ## Team Patterns
 
 ### Hub-and-Spoke
