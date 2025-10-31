@@ -366,8 +366,9 @@ instructions:
 ```
 
 **Supported Operators:**
-- ✅ `==` (equality for booleans and strings)
-- ❌ `!=`, `>`, `<`, `>=`, `<=` (NOT supported)
+- ✅ `==` (equality for booleans, strings, and numbers)
+- ✅ `!=` (inequality for booleans, strings, and numbers)
+- ❌ `>`, `<`, `>=`, `<=` (NOT supported)
 - ❌ `&&`, `||`, `!` (NOT supported)
 
 See [Conditional Instructions](../advanced/conditional-instructions.md) for more details.
@@ -476,10 +477,20 @@ meal_planner:
   toolsets:
     - product-catalog
   instructions:
+    - if: "settings.dietary_restrictions != \"none\""
+      content: |
+        Filter all recipes and products by: {settings.dietary_restrictions}
+        Clearly label dietary attributes.
+        Verify ingredients meet restrictions.
+
+    - if: "settings.allergies != \"none\""
+      content: |
+        CRITICAL: Exclude all products containing: {settings.allergies}
+        Double-check ingredient lists.
+        Warn if allergen information unavailable.
+
     - |
         Provide meal plans and shopping lists.
-        Check settings for dietary restrictions and allergies.
-        Filter recipes and products accordingly.
 ```
 
 ### Experience Level

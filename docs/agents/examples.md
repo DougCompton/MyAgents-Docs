@@ -148,6 +148,11 @@ agents:
     name: Product Specialist
     description: Finds and recommends products
     instructions:
+      - if: "settings.dietary_restrictions != \"none\""
+        content: |
+          Filter all products by dietary restriction: {settings.dietary_restrictions}
+          Clearly label dietary attributes on recommendations.
+
       - if: "settings.budget_conscious"
         content: |
           Prioritize value and deals:
@@ -155,7 +160,7 @@ agents:
           - Highlight sale items
           - Suggest generic brands
           - Mention bulk discounts
-      
+
       - |
         Search the product catalog for items matching customer needs.
           
@@ -176,6 +181,11 @@ agents:
     name: Meal Planner
     description: Creates meal plans and shopping lists
     instructions:
+      - if: "settings.dietary_restrictions != \"none\""
+        content: |
+          Create meal plans for: {settings.dietary_restrictions}
+          Ensure all ingredients and recipes comply with this restriction.
+
       - |
         Create meal plans based on:
           - Number of servings needed
@@ -225,6 +235,11 @@ agents:
     name: Recipe Specialist
     description: Finds and suggests recipes
     instructions:
+      - if: "settings.dietary_restrictions != \"none\""
+        content: |
+          Only suggest recipes for: {settings.dietary_restrictions}
+          Verify all ingredients comply with this restriction.
+
       - |
         Help users find recipes based on:
           - Available ingredients

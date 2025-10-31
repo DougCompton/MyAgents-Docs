@@ -99,6 +99,340 @@ coordinator:
 
 ---
 
+## Sharing Data Between Agents
+
+Agents can pass their outputs to other agents using the `output_key` property. This enables sophisticated workflows where agents build on each other's work.
+
+### How It Works
+
+1. **Agent Saves Output:** An agent with `output_key` saves its response for later use
+2. **Other Agents Reference:** Other agents use `{keyName}` placeholders in their instructions to access saved outputs
+3. **Automatic Replacement:** Placeholders are replaced with the actual content before the agent runs
+
+### Basic Example
+
+```yaml
+version: "1"
+id: research-writing
+name: Research & Writing Team
+description: Research followed by content creation
+interactive: true
+default_agent: coordinator
+
+agents:
+  coordinator:
+    type: llm
+    name: Coordinator
+    description: Manages workflow
+    instructions:
+      - |
+        First, transfer_task to researcher.
+        After research completes, transfer_task to writer.
+    sub_agents:
+      - researcher
+      - writer
+
+  researcher:
+    type: llm
+    name: Researcher
+    description: Conducts research
+    output_key: research_summary    # Save output for later
+    instructions:
+      - |
+        Research the topic and provide a comprehensive summary
+        with key facts, statistics, and sources.
+    toolsets:
+      - duckduckgo
+
+  writer:
+    type: llm
+    name: Writer
+    description: Creates content from research
+    instructions:
+      - |
+        Write an article based on this research:
+
+        {research_summary}    # Use researcher's output
+
+        Create engaging, well-structured content.
+```
+
+**Execution Flow:**
+
+1. Coordinator delegates to researcher
+2. Researcher completes and saves its output
+3. Coordinator delegates to writer
+4. Writer receives the research content and creates the article
+
+### Use Case: Multi-Stage Pipeline
+
+Agents can build on each other's work through multiple stages:
+
+```yaml
+agents:
+  stage_1_collector:
+    type: llm
+    output_key: raw_data
+    instructions:
+      - |
+        Collect data on the topic.
+        Output format: Bullet points with sources.
+
+  stage_2_analyzer:
+    type: llm
+    output_key: analysis
+    instructions:
+      - |
+        Analyze this data:
+        {raw_data}
+
+        Identify trends, insights, and key findings.
+
+  stage_3_visualizer:
+    type: llm
+    output_key: chart_recommendations
+    instructions:
+      - |
+        Based on this analysis:
+        {analysis}
+
+        Recommend visualizations (charts, graphs, tables).
+
+  stage_4_writer:
+    type: llm
+    instructions:
+      - |
+        Write a comprehensive report using:
+
+        Data: {raw_data}
+        Analysis: {analysis}
+        Visualizations: {chart_recommendations}
+```
+
+### Use Case: Parallel Collection + Synthesis
+
+Multiple agents work in parallel, then a coordinator synthesizes:
+
+```yaml
+agents:
+  coordinator:
+    type: llm
+    name: Synthesis Coordinator
+    instructions:
+      - |
+        First, use parallel_researchers to gather information.
+        Then synthesize all findings into a comprehensive report.
+    sub_agents:
+      - parallel_researchers
+
+  parallel_researchers:
+    type: parallel
+    name: Multi-Source Researchers
+    instructions:
+      - |
+        Combine all research perspectives:
+
+        Academic: {academic_findings}
+        Industry: {industry_findings}
+        News: {news_findings}
+
+        Create a unified research brief.
+    sub_agents:
+      - academic_researcher
+      - industry_researcher
+      - news_researcher
+
+  academic_researcher:
+    type: llm
+    output_key: academic_findings
+    instructions:
+      - |
+        Research academic sources and scholarly papers.
+    toolsets:
+      - duckduckgo
+
+  industry_researcher:
+    type: llm
+    output_key: industry_findings
+    instructions:
+      - |
+        Research industry reports and expert analysis.
+    toolsets:
+      - duckduckgo
+
+  news_researcher:
+    type: llm
+    output_key: news_findings
+    instructions:
+      - |
+        Research recent news and current trends.
+    toolsets:
+      - duckduckgo
+```
+
+### Use Case: Iterative Refinement with Context
+
+Loop agents can reference initial input and progressively improve:
+
+```yaml
+agents:
+  initial_writer:
+    type: llm
+    output_key: draft_v1
+    instructions:
+      - |
+        Write a first draft on the topic.
+
+  refinement_loop:
+    type: loop
+    max_iterations: 3
+    name: Content Refiner
+    instructions:
+      - |
+        Iteratively improve the content.
+        Original draft: {draft_v1}
+
+        Each iteration should enhance clarity and quality.
+    sub_agents:
+      - content_improver
+
+  content_improver:
+    type: llm
+    output_key: draft_v1    # Overwrites each iteration
+    instructions:
+      - |
+        Improve this content:
+        {draft_v1}
+
+        Focus on clarity, flow, and impact.
+```
+
+### Important Details
+
+**When Saved Outputs Are Available:**
+- ✅ Available to all agents during the same conversation turn
+- ❌ NOT saved between different chat messages
+- ❌ NOT shared between different users
+
+**Using Placeholders:**
+- `{keyName}` → Replaced with the saved output
+- `{missing_key}` → Left as-is if the key doesn't exist
+- Whitespace is ignored: `{  keyName  }` works the same as `{keyName}`
+
+**Naming Your Keys:**
+- Use descriptive names: `research_summary`, `analysis_results`
+- Snake_case recommended: `user_preferences`, `raw_data`
+- Dashes and dots also work: `key-with-dashes`, `key.with.dots`
+
+### Best Practices
+
+**1. Use Descriptive Keys**
+
+```yaml
+# ✅ Good - Clear purpose
+output_key: research_findings
+output_key: technical_analysis
+output_key: user_preferences
+
+# ❌ Bad - Unclear
+output_key: data
+output_key: result
+output_key: output
+```
+
+**2. Document State Dependencies**
+
+```yaml
+agents:
+  analyzer:
+    instructions:
+      - |
+        # This agent requires 'research_findings' from researcher
+        Analyze these findings:
+        {research_findings}
+```
+
+**3. Provide Fallback Content**
+
+```yaml
+agents:
+  writer:
+    instructions:
+      - |
+        Research findings:
+        {research_findings}
+
+        If no research is available above, conduct your own research first.
+```
+
+**4. Use Sequential Types for Dependencies**
+
+When agents depend on each other's outputs, use `sequence` type:
+
+```yaml
+pipeline:
+  type: sequence
+  sub_agents:
+    - collector    # output_key: raw_data
+    - analyzer     # uses {raw_data}
+    - reporter     # uses {raw_data} and {analysis}
+```
+
+### Common Patterns
+
+**Pattern 1: Research → Write**
+```yaml
+researcher: output_key: research
+writer: uses {research}
+```
+
+**Pattern 2: Collect → Analyze → Report**
+```yaml
+collector: output_key: data
+analyzer: uses {data}, output_key: insights
+reporter: uses {data} and {insights}
+```
+
+**Pattern 3: Parallel Gather → Synthesize**
+```yaml
+agent_a: output_key: findings_a
+agent_b: output_key: findings_b
+agent_c: output_key: findings_c
+synthesizer: uses {findings_a}, {findings_b}, {findings_c}
+```
+
+**Pattern 4: Draft → Iterate → Finalize**
+```yaml
+drafter: output_key: draft
+refiner_loop: uses {draft}, overwrites output_key: draft
+finalizer: uses {draft}
+```
+
+### Troubleshooting
+
+**Placeholder not replaced (shows `{keyName}` in output):**
+
+Check:
+- ✅ The earlier agent has `output_key` defined
+- ✅ The earlier agent completed successfully
+- ✅ Key name matches exactly (case-sensitive)
+- ✅ Agents ran in the correct order
+
+**Missing or incorrect data:**
+
+Verify:
+- ✅ The coordinator delegates to agents in the right sequence
+- ✅ The agent that saves the output ran before the agent that uses it
+- ✅ No typos in key names
+
+**Data not available in next conversation:**
+
+Remember:
+- Saved outputs only last for one conversation turn
+- For data that needs to persist between conversations, use the `memory-server` toolset
+
+---
+
 ## Team Patterns
 
 ### Hub-and-Spoke

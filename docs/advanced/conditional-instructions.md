@@ -71,18 +71,29 @@ instructions:
       Output in JSON format
 ```
 
+**String inequality:**
+```yaml
+instructions:
+  - if: "settings.dietary_restrictions != \"none\""
+    content: |
+      Filter recipes by restriction: {settings.dietary_restrictions}
+```
+
 **Note:** String values must be double-quoted within the condition.
 
-### Limitations
+### Supported Operators
 
-**The following are NOT supported:**
-- ❌ Negation operators (`!`)
-- ❌ Logical operators (`&&`, `||`)
-- ❌ Comparison operators (`>`, `<`, `>=`, `<=`)
-- ❌ Inequality checks (`!=`)
-- ❌ Complex expressions with parentheses
+**✅ Fully Supported:**
+- `==` - Equality (booleans, strings, numbers)
+- `!=` - Inequality (booleans, strings, numbers)
 
-**Workaround:** Use separate explicit conditions for each case:
+**❌ NOT Supported:**
+- Negation operators (`!`)
+- Logical operators (`&&`, `||`)
+- Comparison operators (`>`, `<`, `>=`, `<=`)
+- Complex expressions with parentheses
+
+**Workaround for logical operators:** Use separate explicit conditions for each case:
 
 ```yaml
 instructions:

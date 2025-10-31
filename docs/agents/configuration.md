@@ -499,12 +499,16 @@ Each instruction can be:
     Instructions for JSON format
 ```
 
-**Note:** The schema does NOT support:
+**Supported operators:**
+- ✅ `==` (equality)
+- ✅ `!=` (inequality)
+
+**NOT supported:**
 - ❌ Negation (`!settings.property`)
 - ❌ Logical operators (`&&`, `||`)
-- ❌ Comparison operators (`>`, `<`, `!=`)
+- ❌ Comparison operators (`>`, `<`, `>=`, `<=`)
 
-Use separate conditional blocks for each condition instead.
+Use separate conditional blocks for multiple conditions.
 
 See [Conditional Instructions](../advanced/conditional-instructions.md) for more patterns.
 
@@ -627,10 +631,91 @@ agents:
 
 ---
 
+### output_key
+
+**Type:** `string`
+**Required:** No
+**Supported by:** `llm` agent type only
+
+Saves this agent's response so other agents can use it later. Other agents can reference the saved output using `{keyName}` placeholders in their instructions.
+
+```yaml
+agents:
+  researcher:
+    type: llm
+    name: Researcher
+    description: Conducts research on a topic
+    output_key: research_findings    # Save this agent's output
+    instructions:
+      - |
+        Research the topic and provide key findings.
+    toolsets:
+      - duckduckgo
+
+  writer:
+    type: llm
+    name: Writer
+    description: Writes content based on research
+    instructions:
+      - |
+        Write an article based on these research findings:
+
+        {research_findings}    # Use the researcher's saved output
+```
+
+**How It Works:**
+
+When an agent with `output_key` finishes, its response is saved and can be referenced by other agents using `{keyName}` placeholders. The placeholder is automatically replaced with the actual content before the agent runs.
+
+**Use Cases:**
+
+- **Sequential workflows:** Pass results from one agent to the next
+- **Parallel processing:** Multiple agents create outputs that another agent combines
+- **Data collection:** Gather information from specialists for synthesis
+
+**Example - Sequential Workflow:**
+
+```yaml
+agents:
+  data_collector:
+    type: llm
+    output_key: raw_data
+    instructions:
+      - |
+        Collect data on the topic.
+
+  data_analyst:
+    type: llm
+    output_key: analysis
+    instructions:
+      - |
+        Analyze this data:
+        {raw_data}
+
+        Provide insights and trends.
+
+  report_writer:
+    type: llm
+    instructions:
+      - |
+        Write a report based on:
+
+        Data: {raw_data}
+        Analysis: {analysis}
+```
+
+**Important Notes:**
+
+- Saved outputs are only available during the current conversation turn
+- If you reference a `{keyName}` that doesn't exist, it stays as-is in the instructions
+- Empty or whitespace-only output keys are ignored
+
+---
+
 ### toolsets
 
-**Type:** `array` of strings  
-**Required:** No  
+**Type:** `array` of strings
+**Required:** No
 **Supported by:** `llm` agent type only
 
 Lists external tool integrations available to this agent.
@@ -642,13 +727,13 @@ agents:
     toolsets:
       - duckduckgo        # Web search
       - memory-server     # Persistent storage
-  
+
   scheduler:
     type: llm
     toolsets:
       - google-calendar   # Calendar integration
       - notification-server  # Push notifications
-  
+
   coordinator:
     type: parallel
     # toolsets not supported for parallel agents
